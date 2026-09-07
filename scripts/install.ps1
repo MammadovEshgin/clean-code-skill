@@ -40,4 +40,4 @@ Write-Host "  /deslop <path|repo>      clean existing code, behaviour-preserving
 Write-Host "  /interrogate             challenge a finished change before calling it done"
 Write-Host "  /clean-code-review main  fresh-context review of the diff since main"
 Write-Host "The clean-code skill itself loads automatically whenever code is written or changed."
-Write-Host "Scripts inside the skills (diff-stats.sh, format-on-edit.sh) run under Git Bash."
+Write-Host "Scripts inside the skills (diff-stats.sh, complexity.sh, format-on-edit.sh) run under Git Bash."

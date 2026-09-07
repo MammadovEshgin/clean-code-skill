@@ -62,17 +62,19 @@ What happens:
 - The existing tests for the scope run; the baseline is recorded (for example `41/41`).
 - Where coverage is thin over code about to be touched, characterization tests are added at the public interface first.
 - The inventory tools run (`knip`, `ruff`, `vulture`, `deadcode`, `clippy`, `aislop`, whichever exist) and their counts are recorded.
-- Eight passes in order: dead code, comments, abstractions, defensive paranoia, duplication, naming, tests, filler. Typecheck and focused tests after each; a failing pass is reverted.
+- `complexity.sh` records the baseline: function count, maximum, functions over budget, erosion, hotspots.
+- Nine passes in order: dead code, comments, abstractions, defensive paranoia, duplication, naming, tests, filler, complexity hotspots. Typecheck and focused tests after each; a failing pass is reverted.
 - The report:
 
   ```
   ## Deslop Report
-  Scope     src/orders · 14 files inspected · 9 files changed
-  Diff      +38 / -412 lines · net -374
-  Passes    dead code 131 · comments 96 · abstractions 3 · defensive 22 · duplication 2 · naming 4 · tests 6 · filler 11
-  Gates     typecheck pass · lint pass · tests 41/41 → 38/38
-  Tools     knip: 7 unused exports → 0
-  Verdict   behaviour preserved
+  Scope       src/orders · 14 files inspected · 9 files changed
+  Diff        +38 / -412 lines · net -374
+  Passes      dead code 131 · comments 96 · abstractions 3 · defensive 22 · duplication 2 · naming 4 · tests 6 · filler 11 · hotspots 1
+  Gates       typecheck pass · lint pass · tests 41/41 → 38/38
+  Complexity  max 23 → 9 · over budget 1 → 0 · erosion 18% → 0%
+  Tools       knip: 7 unused exports → 0
+  Verdict     behaviour preserved
 
   Found, not changed
   - src/orders/lib/pricing.ts:88 rounds before summing; likely a bug, needs a decision.
@@ -83,7 +85,7 @@ What happens:
   2. Decide on the pricing rounding, then add a regression test.
   ```
 
-  Three tests were deleted in pass 7; the report says which behaviour the remaining tests cover.
+  Three tests were deleted in pass 7; the report says which behaviour the remaining tests cover. Pass 9 split the one function over the complexity budget along its responsibilities, with the tests unchanged.
 
 Then widen:
 
@@ -125,6 +127,7 @@ Every skill ends with a block of ten lines or fewer. The fields:
 | `Diff` | Added and removed lines from `git diff`, lock files excluded, and the net. Negative net on a cleanup is the point. |
 | `Removed` / `Passes` | Counts per category. Comments and dead code are counted by pattern in the diff; abstractions and tests are counted by the agent. |
 | `Gates` | Each check that actually ran, with its result. `n/a` means it did not run, which is a fact, not a pass. |
+| `Complexity` | Highest per-function cyclomatic complexity, how many functions exceed the budget, and erosion (the share of complexity inside those functions). `/deslop` shows before → after. `n/a` when no ESLint, Ruff, or gocyclo is available. |
 | `Tools` | Inventory tools before and after (unused exports, dead functions, slop score). |
 | `Left` / `Found, not changed` | What was noticed and deliberately not touched. This is where scope discipline shows. |
 | `Verdict` | `ready`, `behaviour preserved`, `needs decision: ...`, or the review's `merge` / `fix then merge` / `rethink`. |
@@ -202,7 +205,7 @@ in a checkout of this repo, then `scripts/check.sh`. Delete whatever the new mod
 
 ## Windows notes
 
-- `scripts/install.ps1 -Global` installs; the skills' own scripts (`diff-stats.sh`, `format-on-edit.sh`) run under Git Bash, which comes with Git for Windows. Claude Code's Bash tool uses it automatically.
+- `scripts/install.ps1 -Global` installs; the skills' own scripts (`diff-stats.sh`, `complexity.sh`, `format-on-edit.sh`) run under Git Bash, which comes with Git for Windows. Claude Code's Bash tool uses it automatically.
 - Hook commands in `hooks.settings.json` call `bash` explicitly for this reason.
 - Paths inside the skills use forward slashes; that is deliberate and works on Windows.
 

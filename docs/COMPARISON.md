@@ -15,7 +15,7 @@ Columns are the layers a slop solution needs. A filled circle means the layer is
 
 | | Writes without slop (auto-loads) | Cleans existing code, behaviour locked | Deterministic gates | Fresh-context review | Report with numbers | Tests-slop rules | Structure / deep modules | Languages | Size, 2026 calibration |
 |---|---|---|---|---|---|---|---|---|---|
-| **clean-code-skill** (this repo) | ● | ● 9 ordered passes | ● installs lint gates; integrates aislop and anti-slop | ● forked context | ● diff, complexity, erosion | ● gate + decision list | ● | any (rules); TS/JS, Py, Go, Rust (gates) | 157-line core, one link deep |
+| **clean-code-skill** (this repo) | ● | ● 9 ordered passes | ● installs lint gates; integrates aislop and anti-slop | ● forked context | ● diff, complexity, erosion | ● gate + decision list | ● | any (rules); TS/JS, Py, Go, Rust (gates) | 156-line core, one link deep |
 | Claude Code `/simplify` + `/code-review` (built in) | ◐ system prompt only | ◐ changed code, no lock ritual | – | ● | – | – | – | any | n/a |
 | [mattpocock/skills](https://github.com/mattpocock/skills) 255k★ | ◐ via `tdd`, `codebase-design` | – | – | ◐ two-axis review in sub-agents | – | ● `tdd` | ● best vocabulary available | any | small skills, process-first |
 | [obra/superpowers](https://github.com/obra/superpowers) 282k★ | ◐ methodology | – | – | ◐ `requesting-code-review` | – | ◐ TDD | – | any | medium |

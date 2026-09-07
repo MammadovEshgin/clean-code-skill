@@ -88,7 +88,7 @@ It is short by design, under 160 lines, at the altitude a senior engineer talks 
 
 **The Problem**: months of agent output are already merged. Nobody wants to hand-review ten thousand lines, and a blind "clean this up" prompt changes behaviour as often as it removes noise.
 
-**The Fix** is [`/deslop`](./skills/deslop/SKILL.md). Give it a file, a directory, a git range, or `repo`. It locks behaviour first (existing tests, plus characterization tests where coverage is thin), then works through eight passes in a fixed order: dead code, comments, abstractions, defensive paranoia, duplication, naming, tests, filler. One category per pass, typecheck and tests after each, revert on red. Anything that looks like a bug goes into "Found, not changed" instead of being fixed on the sly.
+**The Fix** is [`/deslop`](./skills/deslop/SKILL.md). Give it a file, a directory, a git range, or `repo`. It locks behaviour first (existing tests, plus characterization tests where coverage is thin), then works through nine passes in a fixed order: dead code, comments, abstractions, defensive paranoia, duplication, naming, tests, filler, complexity hotspots. One category per pass, typecheck and tests after each, revert on red. Anything that looks like a bug goes into "Found, not changed" instead of being fixed on the sly.
 
 ```
 /deslop src/orders          # start with a module you know
@@ -120,12 +120,13 @@ export function applyDiscount(total: number, percent: number): number {
 
 ```
 ## Deslop Report
-Scope     src/pricing.ts · 1 file inspected · 1 file changed
-Diff      +2 / -30 lines · net -28
-Passes    dead code 2 · comments 12 · abstractions 1 · defensive 2 · duplication 0 · naming 0 · tests 0 · filler 0
-Gates     typecheck pass (after every pass) · lint n/a · characterization 6/6 → 6/6
-Tools     n/a (no knip or eslint in the repo)
-Verdict   behaviour preserved · no passes reverted
+Scope       src/pricing.ts · 1 file inspected · 1 file changed
+Diff        +2 / -30 lines · net -28
+Passes      dead code 2 · comments 12 · abstractions 1 · defensive 2 · duplication 0 · naming 0 · tests 0 · filler 0 · hotspots 0
+Gates       typecheck pass (after every pass) · lint n/a · characterization 6/6 → 6/6
+Complexity  n/a (no eslint in the repo)
+Tools       n/a (no knip or eslint in the repo)
+Verdict     behaviour preserved · no passes reverted
 ```
 
 The test file next to it was out of scope, so the run left it alone and listed its tautological, duplicate, and framework-only tests under "Found, not changed".
@@ -198,12 +199,13 @@ Discipline while writing, gates that insist, cleanup that preserves behaviour, r
 
 ```
 ## Clean Code Report
-Scope     add retry to webhook delivery · 3 files
-Diff      +41 / -87 lines · net -46
-Removed   dead code 12 · comments 19 · debug statements 3 · abstractions 1
-Gates     typecheck pass · lint pass · tests 58/58 · complexity max 7
-Left      src/legacy/export.ts has 40 lines of commented-out code (out of scope)
-Verdict   ready
+Scope       add retry to webhook delivery · 3 files
+Diff        +41 / -87 lines · net -46
+Removed     dead code 12 · comments 19 · debug statements 3 · abstractions 1
+Gates       typecheck pass · lint pass · tests 58/58
+Complexity  max 7 · over budget 0 · erosion 0%
+Left        src/legacy/export.ts has 40 lines of commented-out code (out of scope)
+Verdict     ready
 ```
 
 Ten lines or fewer. The numbers come from two scripts and from the commands the agent actually ran:
@@ -235,7 +237,7 @@ Skills split on one axis: who can invoke them. **User-invoked** skills are reach
 
 **User-invoked**
 
-- **[deslop](./skills/deslop/SKILL.md)** `[path | git-range | repo]`: remove slop from existing code in eight behaviour-preserving passes, with tool-backed before/after numbers.
+- **[deslop](./skills/deslop/SKILL.md)** `[path | git-range | repo]`: remove slop from existing code in nine behaviour-preserving passes, with tool-backed before/after numbers.
 - **[interrogate](./skills/interrogate/SKILL.md)** `[path | git-range]`: challenge a finished change from first principles. Delete, simplify, stop.
 - **[clean-code-review](./skills/clean-code-review/SKILL.md)** `[base-ref] [spec-path]`: fresh-context review on three axes. Reports, does not edit.
 - **[clean-code-setup](./skills/clean-code-setup/SKILL.md)** `[--no-hook]`: lint gates, one check command, `CODING_STANDARDS.md`, optional hook, proof that the gates bite.
