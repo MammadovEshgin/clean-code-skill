@@ -157,4 +157,4 @@ Load only what the task needs; every link is one level deep.
 - [ERRORS.md](ERRORS.md): the four-tool hierarchy and per-language idiom.
 - [TESTS.md](TESTS.md): good tests, bad tests, mocking policy.
 
-Companion skills: `/interrogate` challenges a finished change; `/deslop` cleans existing code in behaviour-preserving passes; `/clean-code-review` reviews a diff in a fresh context; `/clean-code-setup` installs the lint gates and `CODING_STANDARDS.md`.
+Companion skills: `/finish` takes a change from "it works" to ready-to-commit (interrogate, deslop, gates, fresh-context review, findings applied); `/deslop` cleans existing code in behaviour-preserving passes, and `/deslop repo` cleans the whole codebase slice by slice with one commit per slice; `/interrogate` and `/clean-code-review` run those pieces on their own; `/clean-code-setup` installs the lint gates and `CODING_STANDARDS.md`.

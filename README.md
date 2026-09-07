@@ -12,7 +12,7 @@
   <a href="https://agentskills.io"><img alt="agent skills" src="https://img.shields.io/badge/Agent%20Skills-compatible-6f42c1"></a>
 </p>
 
-Five small, composable [Agent Skills](https://agentskills.io) for Claude Code, Codex, Cursor, and any other skills-aware agent. One loads itself whenever code is written. Four you type when you need them. Every run ends with a short, diff-backed report.
+Six small, composable [Agent Skills](https://agentskills.io) for Claude Code, Codex, Cursor, and any other skills-aware agent. One loads itself whenever code is written. Two you type routinely: `/finish` before every commit, `/deslop repo` to clean a whole codebase. Three more are the pieces on their own. Every run ends with a short, diff-backed report.
 
 They are built from the best public thinking on agent-written code (Matt Pocock's skills, John Ousterhout's *A Philosophy of Software Design*, Anthropic's and OpenAI's 2026 guidance, and the engineers whose posts seeded this repo), compressed to what still changes a strong model's behaviour. See [Credits](#credits).
 
@@ -24,11 +24,11 @@ They are built from the best public thinking on agent-written code (Matt Pocock'
    npx skills add MammadovEshgin/clean-code-skill
    ```
 
-2. Select all five skills and the agents you use.
+2. Select all six skills and the agents you use.
 
 3. In your agent, run `/clean-code-setup` once. It wires complexity and dead-code lint gates into your repo, adds one `check` command, creates `CODING_STANDARDS.md`, and proves each gate fails on a violation before passing again.
 
-4. Done. `clean-code` now fires on its own whenever code is written or changed. `/deslop`, `/interrogate`, and `/clean-code-review` are there when you type them.
+4. Done. `clean-code` now fires on its own whenever code is written or changed. Type `/finish` before each commit. On a codebase that already has slop, type `/deslop repo` once and let it work through the modules, one commit per module.
 
 ## Install as a Claude Code plugin
 
@@ -49,7 +49,7 @@ claude plugin install clean-code@mammadoveshgin
 Two ways to install, two philosophies:
 
 - **skills.sh** copies the skills into your project so you can edit them and make them your own.
-- **The plugin** keeps them as a read-only, always-current bundle. Commands are namespaced: `/clean-code:deslop`, `/clean-code:interrogate`, and so on.
+- **The plugin** keeps them as a read-only, always-current bundle. Commands are namespaced: `/clean-code:finish`, `/clean-code:deslop`, and so on.
 
 > [!NOTE]
 > Windows users: `.\scripts\install.ps1 -Global` installs everywhere. The skills' own scripts run under Git Bash, which ships with Git for Windows. A plain copy of `skills/*` into any host's skills directory also works; see [Compatibility](#compatibility).
@@ -58,7 +58,7 @@ Two ways to install, two philosophies:
 
 Agents rarely fail at syntax. They fail by adding: a narration comment on every line, a helper with one caller, a `try/catch` that swallows, a null check on a value the type guarantees, a fallback that hides a failure, a stub "for later", a test that asserts a mock was called. Each piece looks finished. Together they are **slop**: code that works, passes a glance, and degrades the codebase at machine speed.
 
-Telling a model "write clean code" does nothing; it already believes it does. These skills exist to fix six specific failure modes.
+Telling a model "write clean code" does nothing; it already believes it does. These skills exist to fix seven specific failure modes.
 
 ### #1: The Agent Writes Slop
 
@@ -91,11 +91,13 @@ It is short by design, under 160 lines, at the altitude a senior engineer talks 
 **The Fix** is [`/deslop`](./skills/deslop/SKILL.md). Give it a file, a directory, a git range, or `repo`. It locks behaviour first (existing tests, plus characterization tests where coverage is thin), then works through nine passes in a fixed order: dead code, comments, abstractions, defensive paranoia, duplication, naming, tests, filler, complexity hotspots. One category per pass, typecheck and tests after each, revert on red. Anything that looks like a bug goes into "Found, not changed" instead of being fixed on the sly.
 
 ```
-/deslop src/orders          # start with a module you know
-/deslop src                 # then the tree
-/deslop repo                # then everything, directory by directory
-/deslop main                # or just the changes since main
+/deslop repo                # the whole codebase, planned and committed slice by slice
+/deslop repo --plan         # write the plan and stop
+/deslop src/orders          # one module, when you want to judge the result first
+/deslop main                # the changes since main
 ```
+
+`repo` is the automated form. A whole codebase does not fit one context, and one giant diff can be neither reviewed nor reverted, so `/deslop repo` does what large-scale changes do everywhere: shard, then land each shard on its own. It inventories the source, measures complexity and churn, groups files into slices (a module with its tests), and orders them by risk and value: slices with tests first, leaves before shared code, hot spots first within a tier. The plan goes to `.deslop/plan.md`. Then, for each slice: a fresh-context worker runs the nine passes on that slice alone, the main session confines the diff and runs the repo's check command, and the slice lands as one commit on a `deslop/<date>` branch. Red gate, slice reverted, next slice. Stop whenever you like; `/deslop repo` resumes from the plan. The final commit removes the plan and the report sums the slices. The design and its sources are in [REPO.md](./skills/deslop/REPO.md).
 
 <details>
 <summary>What a run looks like</summary>
@@ -141,7 +143,7 @@ The test file next to it was out of scope, so the run left it alone and listed i
 
 **The Problem**: the feature works, the tests pass, and the diff still carries the scaffolding the agent built to get there.
 
-**The Fix** is [`/interrogate`](./skills/interrogate/SKILL.md). It restates the purpose in one sentence, challenges every weak assumption, asks what can be deleted entirely and what becomes simpler once that is gone, then makes the cuts in that order of preference and verifies. "Nothing to change" is a valid answer. The same interrogation is step five of the `clean-code` loop, so it runs on every change even when you never type it.
+**The Fix** is [`/interrogate`](./skills/interrogate/SKILL.md). It restates the purpose in one sentence, challenges every weak assumption, asks what can be deleted entirely and what becomes simpler once that is gone, then makes the cuts in that order of preference and verifies. "Nothing to change" is a valid answer. The same interrogation is step five of the `clean-code` loop and step one of `/finish`, so it runs on every change even when you never type it.
 
 ### #4: The Author Reviews Its Own Work
 
@@ -162,7 +164,7 @@ The test file next to it was out of scope, so the run left it alone and listed i
 /clean-code-review main docs/specs/rate-limit.md
 ```
 
-It filters to what affects correctness, maintainability, or a documented standard. A reviewer told to find gaps will find some; chasing every one is how over-engineering creeps back in.
+It filters to what affects correctness, maintainability, or a documented standard. A reviewer told to find gaps will find some; chasing every one is how over-engineering creeps back in. `/finish` runs this review as its fourth step and applies the findings for you.
 
 > [!TIP]
 > When the agent does something you dislike, write one line in `CODING_STANDARDS.md`. The review and the writing skill read it on every run, and it overrides their defaults. Date the line; delete it when a linter enforces it. Every mistake happens once. (The pattern is Matt Pocock's: notice, write it down, let review enforce it.)
@@ -191,9 +193,25 @@ For TypeScript, a second kind of gate matters: type evidence. Dillon Mulroy's [a
 
 **The Fix** is a hard gate in `clean-code` and a decision list in [TESTS.md](./skills/clean-code/TESTS.md): a test exists when a plausible bug would make it fail at the public seam and a caller would care. Level (unit, integration, end-to-end, contract, property) is chosen by where the behaviour is observable, not by habit. `/deslop`'s seventh pass deletes tests that cannot fail and names the remaining coverage for each deletion.
 
+### #7: Six Steps Before Every Commit
+
+> "Each new session begins with no memory of what came before."
+>
+> Anthropic, [Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+
+**The Problem**: interrogate, deslop, run the check, review in a fresh context, apply the findings, review again. Six steps before every commit is a workflow nobody keeps by hand, so the last three get skipped on the day they matter.
+
+**The Fix** is [`/finish`](./skills/finish/SKILL.md), one command between "it works" and `git commit`. It interrogates the diff first (a deleted function needs no cleaning), deslops what remains, runs the check, hands the diff to a fresh-context reviewer, applies the slop findings and the safe design findings, reverts scope drift, runs the check again, and reviews once more when anything changed. It leaves the working tree ready and prints one report with a suggested commit message; `--commit` commits when the verdict is ready. A `rethink` verdict stops it, because that is a decision, not a cleanup.
+
+```
+/finish                     # the uncommitted diff
+/finish main                # the branch since main
+/finish main --commit       # and commit when ready
+```
+
 ### Summary
 
-Discipline while writing, gates that insist, cleanup that preserves behaviour, review with fresh eyes, and a report at the end of every run. Software fundamentals matter more with agents, not less; these skills make them repeatable.
+Discipline while writing, gates that insist, cleanup that preserves behaviour (one module or the whole repo), review with fresh eyes, one command before every commit, and a report at the end of every run. Software fundamentals matter more with agents, not less; these skills make them repeatable.
 
 ## Every Run Ends With A Report
 
@@ -217,7 +235,7 @@ A gate that did not run says `n/a`, never `pass`. `Left` is where scope discipli
 
 ### Measured, not asserted
 
-`evals/run.sh` runs `/deslop` on fixtures with planted slop in a fresh Claude Code session and checks the result mechanically: behaviour test still passes, every planted pattern gone, file under a line ceiling. Two fixtures today (TypeScript, Python); add one from your own codebase. [docs/COMPARISON.md](./docs/COMPARISON.md) sets this repo against the alternatives people install, layer by layer, including where it is weaker.
+`evals/run.sh` runs the skills on fixtures with planted slop in a fresh Claude Code session and checks the result mechanically: behaviour test still passes, every planted pattern gone, file under a line ceiling, and for `/deslop repo` one commit per slice with a clean tree at the end. Four fixtures today (`/deslop` in TypeScript and Python, `/finish` on a branch, `/deslop repo` over two modules); add one from your own codebase. [docs/COMPARISON.md](./docs/COMPARISON.md) sets this repo against the alternatives people install, layer by layer, including where it is weaker.
 
 ## Built For 2026 Models
 
@@ -237,7 +255,8 @@ Skills split on one axis: who can invoke them. **User-invoked** skills are reach
 
 **User-invoked**
 
-- **[deslop](./skills/deslop/SKILL.md)** `[path | git-range | repo]`: remove slop from existing code in nine behaviour-preserving passes, with tool-backed before/after numbers.
+- **[finish](./skills/finish/SKILL.md)** `[base-ref] [--commit]`: before a commit. Interrogate, deslop, gates, fresh-context review, findings applied, one report with a suggested commit message.
+- **[deslop](./skills/deslop/SKILL.md)** `[path | git-range | repo [--plan]]`: remove slop from existing code in nine behaviour-preserving passes, with tool-backed before/after numbers. `repo` plans the whole codebase into slices and lands each as its own commit.
 - **[interrogate](./skills/interrogate/SKILL.md)** `[path | git-range]`: challenge a finished change from first principles. Delete, simplify, stop.
 - **[clean-code-review](./skills/clean-code-review/SKILL.md)** `[base-ref] [spec-path]`: fresh-context review on three axes. Reports, does not edit.
 - **[clean-code-setup](./skills/clean-code-setup/SKILL.md)** `[--no-hook]`: lint gates, one check command, `CODING_STANDARDS.md`, optional hook, proof that the gates bite.
@@ -245,6 +264,7 @@ Skills split on one axis: who can invoke them. **User-invoked** skills are reach
 **Reference files** (loaded on demand by the skills, one link deep)
 
 - **[RED-FLAGS.md](./skills/clean-code/RED-FLAGS.md)**: the catalog. AI slop tells by category, Ousterhout's fourteen design red flags, Fowler's smell baseline, complexity signals. Each with its fix.
+- **[REPO.md](./skills/deslop/REPO.md)**: the `/deslop repo` loop. Preflight, plan, slice order, the worker prompt, gate, commit, resume, finish.
 - **[COMMENTS.md](./skills/clean-code/COMMENTS.md)**: what to delete, what to keep, with before/after examples and language notes.
 - **[STRUCTURE.md](./skills/clean-code/STRUCTURE.md)**: deep modules, module and project layout, dependency direction, what not to create, a new-project checklist, language notes.
 - **[ERRORS.md](./skills/clean-code/ERRORS.md)**: define errors out of existence, mask, aggregate, crash; boundary validation; per-language idiom.
@@ -264,9 +284,9 @@ Worked examples, recipes (legacy repo in a day, PR gate in CI, writer and review
 
 | Host | Install | Notes |
 |---|---|---|
-| Claude Code | skills.sh, plugin, or script | Full support, including the forked review context and the format-on-edit hook. |
-| Codex | skills.sh or `scripts/install.sh --codex` | `agents/openai.yaml` ships with every skill; user-invoked skills are marked implicit-invocation-off. |
-| Cursor, OpenCode, Gemini CLI, Antigravity, others | skills.sh, or copy `skills/*` into the host's skills directory | Frontmatter fields a host does not know are ignored. |
+| Claude Code | skills.sh, plugin, or script | Full support, including the forked review context, the fresh-context workers of `/deslop repo` and `/finish`, and the format-on-edit hook. |
+| Codex | skills.sh or `scripts/install.sh --codex` | `agents/openai.yaml` ships with every skill; user-invoked skills are marked implicit-invocation-off. Without subagents, `/deslop repo` runs slices inline and resumes across sessions; `/finish` reviews inline. |
+| Cursor, OpenCode, Gemini CLI, Antigravity, others | skills.sh, or copy `skills/*` into the host's skills directory | Frontmatter fields a host does not know are ignored. Same inline fallback as Codex. |
 | Windows | `scripts/install.ps1` | Skill scripts run under Git Bash. |
 
 ## Credits
@@ -275,7 +295,8 @@ The full annotated list is in [docs/SOURCES.md](./docs/SOURCES.md). The largest 
 
 - **[Matt Pocock](https://github.com/mattpocock/skills)**: deep modules, seams and adapters, the `tdd` test discipline, two-axis review, `CODING_STANDARDS.md` as the compounding loop, the model-invoked versus user-invoked split, and `writing-great-skills`.
 - **John Ousterhout**, *A Philosophy of Software Design*: complexity, deep modules, the red flags, define errors out of existence, comments as a design tool.
-- **Anthropic**: skill authoring best practices, Claude Code best practices, the Claude 5 context-engineering post, the prompting guide's agentic-coding sections.
+- **Anthropic**: skill authoring best practices, Claude Code best practices, the Claude 5 context-engineering post, the prompting guide's agentic-coding sections, and the long-running-agent harness (a fresh session per unit of work, a progress file, a commit) behind `/deslop repo`.
+- **Google**, *Software Engineering at Google* ch. 22, and **Kent Beck**, *Tidy First?*: large-scale changes as independently tested, independently committed shards; tidyings in their own small commits.
 - **OpenAI Codex DX** (Eric Provencher): "Rethinking skills and prompts for GPT-6 Astra".
 - **George Pickett, Emanuele Di Pietro, Ben Vinegar, Alex Graveley, Manish Kumar**: the posts that seeded this repo. Ben Vinegar's complexity-ceiling pull requests are the model for the ratchet.
 - **Dillon Mulroy**, [anti-slop](https://github.com/dmmulroy/anti-slop): types as evidence; the `SAFETY:` convention; no module mocking.

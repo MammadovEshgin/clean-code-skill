@@ -61,8 +61,9 @@ cat <<'EOF'
 
 Done. In your agent:
   /clean-code-setup        once per repo: lint gates, check command, CODING_STANDARDS.md
-  /deslop <path|repo>      clean existing code, behaviour-preserving
-  /interrogate             challenge a finished change before calling it done
-  /clean-code-review main  fresh-context review of the diff since main
+  /finish                  before every commit: interrogate, deslop, gates, fresh-context review, findings applied
+  /deslop <path|repo>      clean existing code, behaviour-preserving; repo = the whole codebase, one commit per slice
+  /interrogate             challenge a finished change on its own
+  /clean-code-review main  fresh-context review of the diff since main, on its own
 The clean-code skill itself loads automatically whenever code is written or changed.
 EOF

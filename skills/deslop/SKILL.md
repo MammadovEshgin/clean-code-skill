@@ -1,15 +1,15 @@
 ---
 name: deslop
-description: Audit existing code for AI slop and remove it in behaviour-preserving passes, with evidence. Scope is a path, a git range, or "repo".
+description: Audit existing code for AI slop and remove it in behaviour-preserving passes, with evidence. Scope is a path, a git range, or "repo" for the whole codebase, planned and committed slice by slice.
 disable-model-invocation: true
-argument-hint: [path | git-range | repo]
+argument-hint: [path | git-range | repo [--plan]]
 ---
 
 # Deslop
 
 Remove low-value code from an existing codebase without changing what it does: dead code, narration comments, trivial wrappers, duplicate helpers, defensive paranoia, debug leftovers, redundant tests, stale ceremony. The output is a smaller codebase that behaves identically, plus a report that proves it.
 
-Scope: `$ARGUMENTS`. Empty means the uncommitted diff; `repo` means every source directory.
+Scope: `$ARGUMENTS`. Empty means the uncommitted diff. A path or a git range runs the procedure below directly. `repo` means the whole codebase and follows [REPO.md](REPO.md) instead: plan the work as slices, run this procedure on each slice in a fresh context, gate and commit each slice on its own, resume from the plan when interrupted. `repo --plan` writes the plan and stops. Workers spawned by REPO.md read `${CLAUDE_SKILL_DIR}/SKILL.md` and run the procedure below for one slice.
 
 Vocabulary and the catalog of what counts as slop live in the `/clean-code` skill (`RED-FLAGS.md` beside it). Read that file before the first pass.
 
@@ -26,7 +26,7 @@ Vocabulary and the catalog of what counts as slop live in the `/clean-code` skil
 
 ### 1. Establish the scope and the safety net
 
-- Resolve the scope to a list of files. For `repo`, list every top-level source directory; each one is inspected before the work is called finished.
+- Resolve the scope to a list of files.
 - Identify the commands: typecheck, focused test, full suite, lint. Run typecheck and the full suite now; record the baseline (`N/N passed`).
 - Run the inventory tools that exist in the repo, and record their output as the baseline:
   - TypeScript/JavaScript: `npx knip` (unused files, exports, dependencies), ESLint with `no-unused-vars`, `npx ts-prune` if present.
@@ -57,13 +57,12 @@ Pass 9 is structural, so it has its own rule: split a hotspot along its responsi
 
 For each finding: apply the smallest edit that removes it, then continue. For each pass: run typecheck and the focused tests; on green, note the pass's stats (`git diff --shortstat`), on red, revert the pass and investigate before moving on.
 
-Commit per pass only when the user asked for commits. Otherwise keep the passes sequential and report them separately so the reviewer can follow.
+Commit per pass only when the user asked for commits. Otherwise keep the passes sequential and report them separately so the reviewer can follow. In `repo` scope the orchestrator commits per slice; a worker never commits.
 
 ### 3. Finish
 
 - Run lint and the full suite. Compare against the baseline: same tests, same pass count, or the difference is explained by tests deleted in pass 7.
 - Re-run the inventory tools; the numbers must not have gone up.
-- For `repo` scope, confirm every directory listed in step 1 was inspected. Missing one means the work is not finished.
 - Delete any temporary files created during the audit.
 
 ## Report

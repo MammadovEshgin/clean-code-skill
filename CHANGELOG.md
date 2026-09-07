@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 (2026-09-07)
+
+- `/finish`: one command before a commit. Interrogate, deslop, gates, fresh-context review, findings applied, a second review when anything changed. Leaves the tree ready, or commits with `--commit`. Finish Report with a suggested commit message.
+- `/deslop repo`: whole-codebase cleanup as an automated loop. Inventory and measurement, slices ordered by risk and value, the plan in `.deslop/plan.md`, one fresh-context worker per slice, the check command as the gate, one commit per slice on a `deslop/<date>` branch, revert on red, resumable. `--plan` writes the plan only. Design notes in `skills/deslop/REPO.md`.
+- `/clean-code-review`: with a base ref and uncommitted changes, reviews the working tree against the merge-base.
+- `clean-code`, `CLAUDE.md.snippet`, installers, README, USAGE: point at `/finish` and `/deslop repo`.
+- `evals/`: fixtures can name their own `command` and a two-commit `base`; new `ts-finish` (`/finish HEAD~1`) and `ts-repo` (`/deslop repo` over two modules, one commit per slice) fixtures; the runner allows the Agent tool.
+
 ## 1.1.0 (2026-09-07)
 
 - `scripts/complexity.sh`: per-function cyclomatic complexity through ESLint, Ruff, or gocyclo; hotspots; erosion (CC-weighted share in functions over the budget, after SlopCodeBench).

@@ -17,7 +17,7 @@ Arguments: `$ARGUMENTS`. The first is the base ref; the second, if present, is a
 ## 1. Pin the diff
 
 - With uncommitted changes and no base given: `git diff HEAD`, plus `git status --short` for untracked files.
-- With a base given: `git diff <base>...HEAD` (three-dot, against the merge-base). With no base and a clean tree: the merge-base with `main` or `master`.
+- With a base given and a clean tree: `git diff <base>...HEAD` (three-dot, against the merge-base). With a base given and uncommitted changes: the working tree against the merge-base, `git diff $(git merge-base <base> HEAD)`, plus `git status --short`. With no base and a clean tree: the merge-base with `main` or `master`.
 - Confirm the ref resolves and the diff is non-empty before reading further. List the commits (`git log <base>..HEAD --oneline`).
 
 ## 2. Gather the standards

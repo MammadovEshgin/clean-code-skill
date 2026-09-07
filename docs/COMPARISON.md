@@ -48,7 +48,7 @@ Columns are the layers a slop solution needs. A filled circle means the layer is
 
 **wondelai, ertugrul-dmr, btseee.** Robert C. Martin's *Clean Code* as skills, with worked examples. Valuable as teaching material. They are long, they predate the 2026 guidance on instruction size, and ertugrul-dmr's "do not skip trivial tests" is the opposite of the bet this repo makes.
 
-**tmdgusya clean-ai-slop.** The closest ancestor of `/deslop`: lock behaviour, one smell per pass, verify after each. This repo adds the tooling inventory, three more passes (naming, filler, complexity hotspots), the report, and the setup that makes the gates permanent.
+**tmdgusya clean-ai-slop.** The closest ancestor of `/deslop`: lock behaviour, one smell per pass, verify after each. This repo adds the tooling inventory, three more passes (naming, filler, complexity hotspots), the report, the setup that makes the gates permanent, and the `repo` mode that plans a whole codebase into slices and lands each as its own commit from a fresh context.
 
 ## Where this repo is weaker
 

@@ -9,7 +9,7 @@
     {
       "name": "clean-code",
       "source": "./",
-      "description": "Write without AI slop, deslop existing code, interrogate finished changes, review diffs in a fresh context, install lint gates. Every skill ends with a short analytics report.",
+      "description": "Write without AI slop, finish a change before committing (interrogate, deslop, gates, fresh-context review), deslop a path or the whole repo slice by slice, install lint gates. Every skill ends with a short analytics report.",
       "category": "engineering",
       "keywords": [
         "clean-code",

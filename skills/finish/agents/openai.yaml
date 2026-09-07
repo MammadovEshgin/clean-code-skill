@@ -1,0 +1,5 @@
+interface:
+  display_name: "Finish"
+  short_description: "Interrogate, deslop, gate, review, apply: ready to commit"
+policy:
+  allow_implicit_invocation: false
