@@ -26,13 +26,13 @@ Done when the stacks, their current tooling, and the umbrella command (or its ab
 
 | Stack | Template | Enforces | Also add |
 |---|---|---|---|
-| TypeScript / JavaScript | `eslint.clean-code.mjs` | complexity 10, depth 3, params 4, unused vars, empty catch, debug statements, vague TODOs | `knip` (unused files, exports, dependencies); `@typescript-eslint/no-explicit-any` and `ban-ts-comment` when typescript-eslint is present |
+| TypeScript / JavaScript | `eslint.clean-code.mjs` | complexity 10, depth 3, params 4, unused vars, empty catch, debug statements, vague TODOs | `knip` (unused files, exports, dependencies); with typescript-eslint: `no-explicit-any`, `ban-ts-comment`, `no-unnecessary-type-assertion`, and the type-aware `no-unsafe-*` rules. Type-evidence rules (widen-then-assert, chained assertions, `unknown` in signatures, module mocking): offer to vendor [dmmulroy/anti-slop](https://github.com/dmmulroy/anti-slop) with `npx skills add dmmulroy/anti-slop --skill install-anti-slop` when the repo uses Oxlint or is willing to |
 | Python | `ruff.clean-code.toml` | mccabe 10, branches 10, args 4, statements 50, unused imports and variables, commented-out code, `print`, blind `except` | `vulture` for dead code (optional) |
 | Go | `golangci.clean-code.yml` | gocyclo 10, gocognit 15, funlen 60, nestif 4, unused, unparam, errcheck, errorlint | `deadcode` from `golang.org/x/tools` (optional) |
 | Rust | `rust-lints.toml` | `dead_code`, `unused_*` denied; clippy cognitive complexity, too many arguments and lines, `dbg!`, `todo!`, `unwrap` | `cargo-machete` for unused dependencies (optional) |
 
 - Merge the template's rules into the existing config for that stack. Flat ESLint config: import the template and spread it; legacy `.eslintrc`: translate the rules. Ruff: under `[tool.ruff]` in `pyproject.toml`. golangci-lint: the v2 schema; translate if the repo is on v1. Rust: `[lints]` in `Cargo.toml` (or `[workspace.lints]` plus `lints.workspace = true` in members) and thresholds in `clippy.toml`.
-- Thresholds match the complexity budget in `/clean-code`. When the current code exceeds a threshold in many places, set the initial threshold to the current maximum, record it as a **ratchet** in `CODING_STANDARDS.md`, and lower it as `/deslop` passes land.
+- Thresholds match the complexity budget in `/clean-code`. When the current code exceeds a threshold in many places, run `${CLAUDE_SKILL_DIR}/../clean-code/scripts/complexity.sh` to find the current maximum, set the initial ceiling just above it so nothing is grandfathered or suppressed, record it as a **ratchet** in `CODING_STANDARDS.md` with the hotspots listed, and lower it as `/deslop` pass 9 lands. A regression ceiling today beats a target nobody passes.
 - Install a formatter where none exists (Prettier or Biome, Ruff, gofmt, rustfmt).
 
 Done when each stack's lint runs and reports either zero findings or a listed set of pre-existing ones.

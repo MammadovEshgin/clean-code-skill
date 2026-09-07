@@ -87,12 +87,18 @@ Each entry: **Tell** (what it looks like) and **Fix**.
 - Tests of the framework or the language (`expect(true).toBe(true)`, testing that a getter returns what the setter set). Fix: delete.
 - Skipped or commented-out tests without a ticket. Fix: fix or delete.
 - Mocks of the project's own modules. Fix: run them for real; mock only external boundaries.
+- **Module mocking** (`vi.mock("./store")`, `jest.mock`, `monkeypatch` on an own module): the test replaces the seam instead of using it. Fix: inject the dependency through the interface and pass an in-memory adapter.
 
-### Types
+### Types and evidence
 - `any`, `as any`, `object`, `dict[str, Any]` where a real shape exists. Fix: name the shape.
-- Casts to silence the compiler (`as unknown as T`, `# type: ignore`, `@ts-expect-error`) without a reason. Fix: fix the type, or leave a one-line reason.
+- **Widen then assert**: a known value stored as `unknown`, `any`, `object`, or `Record<string, unknown>` and cast back to a narrow type later. Fix: keep the inferred type; use `satisfies` where a constraint is wanted.
+- **Chained assertions**: `input as object as User`, `x as unknown as T`. Fix: parse at the boundary into `User`; if the assertion is genuinely safe, one assertion with a `SAFETY:` comment naming the invariant.
+- **Evidence discarded in signatures**: `unknown` parameters or returns, `Record<string, unknown>` dictionaries, `object` inputs on internal functions. Fix: a named type produced once by the boundary parser.
+- **Runtime narrowing inside**: `typeof x === "string"` or `isinstance` checks on values that a boundary already validated. Fix: parse once at the boundary; trust the type inside.
+- Suppressions (`# type: ignore`, `@ts-expect-error`, `#[allow]`) without a reason. Fix: fix the type, or leave a one-line reason.
 - Boolean pairs that encode a state machine (`isLoading`, `isError`, `isSuccess`). Fix: a discriminated union with one status field.
 - Stringly-typed identifiers and enums. Fix: enum, literal union, or distinct ID type.
+- Reflection to dodge the type checker (`Reflect.get`, `getattr` with a computed name on a typed object). Fix: typed property access.
 
 ## Ousterhout's design red flags
 

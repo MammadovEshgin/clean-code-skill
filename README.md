@@ -174,7 +174,11 @@ It filters to what affects correctness, maintainability, or a documented standar
 
 **The Problem**: a rule in a Markdown file is advice. A model under pressure to finish will rationalise past advice.
 
-**The Fix** is [`/clean-code-setup`](./skills/clean-code-setup/SKILL.md), run once per repo. It merges gates into the linter you already have (complexity 10, nesting 3, parameters 4, unused symbols, empty catches, debug statements, vague TODOs) for TypeScript/JavaScript, Python, Go, and Rust; adds dead-code tooling (`knip`, `ruff`, `deadcode`, `rustc` lints); creates one `check` command; writes `CODING_STANDARDS.md`; optionally installs a format-on-edit hook; and then proves each gate bites by adding a violation, watching the check fail with the rule named, and watching it pass again. On a codebase that already exceeds the thresholds, it ratchets: current maximum today, lowered as `/deslop` lands.
+**The Fix** is [`/clean-code-setup`](./skills/clean-code-setup/SKILL.md), run once per repo. It merges gates into the linter you already have (complexity 10, nesting 3, parameters 4, unused symbols, empty catches, debug statements, vague TODOs) for TypeScript/JavaScript, Python, Go, and Rust; adds dead-code tooling (`knip`, `ruff`, `deadcode`, `rustc` lints); creates one `check` command; writes `CODING_STANDARDS.md`; optionally installs a format-on-edit hook; and then proves each gate bites by adding a violation, watching the check fail with the rule named, and watching it pass again.
+
+On a codebase that already exceeds the thresholds, it does what Ben Vinegar did on a real repo: audit, split the 91-path dispatcher into focused handlers (91 to 12, behaviour preserved), then set the lint ceiling just above the current maximum so nothing is grandfathered, and ratchet it down as hotspots fall. `scripts/complexity.sh` finds the maximum and the hotspots; `/deslop`'s ninth pass splits them.
+
+For TypeScript, a second kind of gate matters: type evidence. Dillon Mulroy's [anti-slop](https://github.com/dmmulroy/anti-slop) Oxlint rules reject every way a model fabricates a type (widen then assert, chained casts, `unknown` in signatures, `typeof` narrowing away from the boundary, module mocking). This repo adopted that framing in its rules and `/clean-code-setup` offers to vendor the plugin.
 
 ### #6: Tests That Cannot Fail
 
@@ -202,7 +206,16 @@ Left      src/legacy/export.ts has 40 lines of commented-out code (out of scope)
 Verdict   ready
 ```
 
-Ten lines or fewer. The numbers come from [`scripts/diff-stats.sh`](./skills/clean-code/scripts/diff-stats.sh) (a deterministic pass over the git diff: lines, comments, commented-out code, debug statements, TODOs, suppressions) and from the commands the agent actually ran. A gate that did not run says `n/a`, never `pass`. `Left` is where scope discipline shows: what was noticed and deliberately not touched.
+Ten lines or fewer. The numbers come from two scripts and from the commands the agent actually ran:
+
+- [`scripts/diff-stats.sh`](./skills/clean-code/scripts/diff-stats.sh): a deterministic pass over the git diff. Lines, comments, commented-out code, debug statements, TODOs, suppressions.
+- [`scripts/complexity.sh`](./skills/clean-code/scripts/complexity.sh): every function's cyclomatic complexity through the linter the repo already has (ESLint, Ruff, gocyclo), the hotspots, and **erosion**: the share of complexity that sits in functions over the budget. Erosion is the metric [SlopCodeBench](https://arxiv.org/abs/2603.24755) uses to show that agent code is twice as eroded as human code and gets worse with every iteration; tracking it per change is how you see slop before it is load-bearing.
+
+A gate that did not run says `n/a`, never `pass`. `Left` is where scope discipline shows: what was noticed and deliberately not touched.
+
+### Measured, not asserted
+
+`evals/run.sh` runs `/deslop` on fixtures with planted slop in a fresh Claude Code session and checks the result mechanically: behaviour test still passes, every planted pattern gone, file under a line ceiling. Two fixtures today (TypeScript, Python); add one from your own codebase. [docs/COMPARISON.md](./docs/COMPARISON.md) sets this repo against the alternatives people install, layer by layer, including where it is weaker.
 
 ## Built For 2026 Models
 
@@ -238,7 +251,8 @@ Skills split on one axis: who can invoke them. **User-invoked** skills are reach
 **Templates and scripts**
 
 - [`skills/clean-code-setup/templates/`](./skills/clean-code-setup/templates/): lint gates for ESLint, Ruff, golangci-lint, and Rust; `CODING_STANDARDS.md`; a `CLAUDE.md` snippet; the format-on-edit hook.
-- [`skills/clean-code/scripts/diff-stats.sh`](./skills/clean-code/scripts/diff-stats.sh): the numbers behind every report.
+- [`skills/clean-code/scripts/diff-stats.sh`](./skills/clean-code/scripts/diff-stats.sh) and [`complexity.sh`](./skills/clean-code/scripts/complexity.sh): the numbers behind every report.
+- [`evals/`](./evals/): fixtures with planted slop and a runner that checks a real agent run mechanically.
 - [`scripts/install.sh`](./scripts/install.sh), [`scripts/install.ps1`](./scripts/install.ps1): copy or symlink the skills into `.claude/skills`, `.agents/skills`, `.cursor/skills`.
 - [`scripts/check.sh`](./scripts/check.sh): validates every skill against the Agent Skills limits and this repo's own rules.
 
@@ -261,7 +275,9 @@ The full annotated list is in [docs/SOURCES.md](./docs/SOURCES.md). The largest 
 - **John Ousterhout**, *A Philosophy of Software Design*: complexity, deep modules, the red flags, define errors out of existence, comments as a design tool.
 - **Anthropic**: skill authoring best practices, Claude Code best practices, the Claude 5 context-engineering post, the prompting guide's agentic-coding sections.
 - **OpenAI Codex DX** (Eric Provencher): "Rethinking skills and prompts for GPT-6 Astra".
-- **George Pickett, Emanuele Di Pietro, Ben Vinegar, Alex Graveley, Manish Kumar**: the posts that seeded this repo.
+- **George Pickett, Emanuele Di Pietro, Ben Vinegar, Alex Graveley, Manish Kumar**: the posts that seeded this repo. Ben Vinegar's complexity-ceiling pull requests are the model for the ratchet.
+- **Dillon Mulroy**, [anti-slop](https://github.com/dmmulroy/anti-slop): types as evidence; the `SAFETY:` convention; no module mocking.
+- **SlopCodeBench** (SprocketLab): the erosion and verbosity metrics, and the finding that quality prompts help at first and then degrade without refactoring checkpoints.
 - **Martin Fowler**, *Refactoring*; **Andrej Karpathy**'s guidelines; **Jesse Vincent**'s superpowers; **anti-slop**; **aislop**; **engineering-discipline**; **Simon Willison**; **Mitchell Hashimoto**; **Boris Cherny**.
 
 ## License

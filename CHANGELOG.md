@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 (2026-09-07)
+
+- `scripts/complexity.sh`: per-function cyclomatic complexity through ESLint, Ruff, or gocyclo; hotspots; erosion (CC-weighted share in functions over the budget, after SlopCodeBench).
+- `clean-code`: Types rules reframed as evidence (parse once at the boundary, never launder a type, `SAFETY:` comments on necessary assertions); module mocking named as a missing seam; `Complexity` line in the report.
+- `RED-FLAGS.md`: widen-then-assert, chained assertions, evidence discarded in signatures, runtime narrowing inside, reflection, module mocking.
+- `/deslop`: complexity baseline in step 1; pass 9 splits hotspots along responsibilities; `Complexity` before/after in the report.
+- `/clean-code-setup`: ceiling-at-current-maximum ratchet with hotspots recorded; typescript-eslint type-aware rules; offer to vendor dmmulroy/anti-slop for TypeScript type evidence.
+- `evals/`: fixtures with planted slop (TypeScript, Python) and a runner that checks a real `/deslop` run mechanically.
+- `docs/COMPARISON.md`: layer-by-layer comparison with the alternatives, including where this repo is weaker.
+
 ## 1.0.0 (2026-09-07)
 
 Initial release.

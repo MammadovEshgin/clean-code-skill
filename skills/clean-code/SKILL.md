@@ -86,15 +86,17 @@ A change that fails one of these is not done.
 - Write a test when a plausible bug would make it fail and a caller would care. Trivial code, getters, framework behaviour, and private helpers get none. Pick the level (unit, integration, end-to-end, contract, property) by the seam where the behaviour is observable, not by habit.
 - Test behaviour through the public interface. A test that must reach past the interface means the module is the wrong shape.
 - Expected values come from an independent source (a known literal, the spec), never recomputed the way the code computes them.
-- Mock only at system boundaries the project does not own. Own modules run for real.
+- Mock only at system boundaries the project does not own. Own modules run for real. Module mocking (`vi.mock`, `jest.mock`, patching an own module) replaces a real seam with a fake one; inject the dependency and use a real or in-memory adapter instead.
 - One behaviour per test, named as the capability ("rejects expired token"), not the mechanism.
 - Red before green when fixing a bug: the test fails first, then the fix makes it pass.
 - Tests that duplicate coverage or exercise the framework are dead code with a runtime cost. Delete them.
 - Good, bad, and mocking policy: [TESTS.md](TESTS.md).
 
-### Types
+### Types and evidence
+- A type is a claim backed by evidence. Parse once at the boundary (schema, validator, decoder) into a named type, then trust it inside. `typeof` or `instanceof` narrowing away from the boundary, and `unknown`, `any`, `object`, or `Record<string, unknown>` in internal signatures, mean the evidence was thrown away.
+- Never launder a type. Widening a known value and asserting it back, chaining casts (`as object as User`), or casting to satisfy the compiler fabricates evidence. A necessary assertion carries a `SAFETY:` comment naming the invariant that makes it true.
 - Make illegal states unrepresentable: discriminated unions over boolean pairs, enums over strings, distinct ID types where mix-ups are plausible.
-- Casts, `any`, and suppression comments (`@ts-ignore`, `# type: ignore`) appear only with a one-line reason. A type that is hard to name signals an unclear design.
+- Suppressions (`@ts-ignore`, `# type: ignore`, `#[allow]`) appear only with a one-line reason. A type that is hard to name signals an unclear design.
 - Annotate public signatures and exported values; let inference carry the rest.
 
 ## Complexity budget
@@ -109,7 +111,7 @@ Numbers a linter can enforce. Crossing one is a signal to restructure, not a rul
 | Function length | 50 lines is a smell to examine, not a limit |
 | File length | 400 lines is a signal to split by responsibility |
 
-`/clean-code-setup` wires these into the repo's linter. When a gate exists, passing it is part of done.
+`/clean-code-setup` wires these into the repo's linter. When a gate exists, passing it is part of done. `scripts/complexity.sh [path]` prints every function's complexity, the hotspots, and **erosion**: the share of complexity that sits in functions over the budget. A function far over budget is split along its responsibilities (one focused handler per case, a table for a ladder of conditions, a special case defined away), never chopped at line counts.
 
 ## Done gate
 
@@ -130,16 +132,17 @@ Copy and check every box before reporting completion.
 
 ## Report
 
-Close every piece of work with this block. Fill the numbers from `scripts/diff-stats.sh [base]` (run from the repo root; needs git and bash) and from the commands that actually ran. Ten lines or fewer.
+Close every piece of work with this block. Fill the numbers from `scripts/diff-stats.sh [base]` and `scripts/complexity.sh [path]` (run from the repo root; need git and bash) and from the commands that actually ran. Ten lines or fewer.
 
 ```
 ## Clean Code Report
-Scope     <request in one line> · <N files>
-Diff      +<added> / -<removed> lines · net <±n>
-Removed   dead code <n> · comments <n> · debug statements <n> · abstractions <n>
-Gates     typecheck <pass|fail|n/a> · lint <pass|fail|n/a> · tests <passed>/<total> · complexity <max or n/a>
-Left      <things noticed outside scope, or "nothing">
-Verdict   <ready | needs decision: ...>
+Scope       <request in one line> · <N files>
+Diff        +<added> / -<removed> lines · net <±n>
+Removed     dead code <n> · comments <n> · debug statements <n> · abstractions <n>
+Gates       typecheck <pass|fail|n/a> · lint <pass|fail|n/a> · tests <passed>/<total>
+Complexity  max <n> · over budget <n> · erosion <x%>   (or n/a)
+Left        <things noticed outside scope, or "nothing">
+Verdict     <ready | needs decision: ...>
 ```
 
 Report only what happened. A gate that did not run says `n/a`, never `pass`.

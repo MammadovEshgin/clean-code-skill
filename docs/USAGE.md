@@ -134,7 +134,10 @@ To recompute the numbers yourself:
 ```bash
 bash ~/.claude/skills/clean-code/scripts/diff-stats.sh          # working tree vs HEAD
 bash ~/.claude/skills/clean-code/scripts/diff-stats.sh main     # since the merge-base with main
+bash ~/.claude/skills/clean-code/scripts/complexity.sh src      # per-function complexity, hotspots, erosion
 ```
+
+`complexity.sh` uses the linter the repo already has (ESLint through the repo's config, Ruff, gocyclo) and prints `n/a` when none applies. Erosion is the share of complexity that sits in functions over the budget; a rising number between two runs means the code is getting harder to change even if every test passes.
 
 ## Recipes
 
@@ -153,6 +156,23 @@ Add a CI job that fails on slop and on complexity, independent of the agent:
 2. `/deslop <hot directory>` for the two or three directories with the most recent commits (`git log --oneline -- <dir> | wc -l`). Cleanup pays off where change happens.
 3. `/clean-code-review main` on the result; apply findings.
 4. Lower one ratchet in `CODING_STANDARDS.md` and the lint config; repeat tomorrow.
+
+### Refactoring checkpoints
+
+Quality prompts improve the first version and then lose ground with every iteration; agents accumulate erosion several times faster than people do. Counter it with a schedule rather than more prompting:
+
+- Before every PR: `/interrogate`, then `/clean-code-review main`.
+- Every few features on the same module: `/deslop <module>`, and compare the `Complexity` line with the last run.
+- When `complexity.sh` shows a hotspot over the budget: let `/deslop` pass 9 split it before the next feature lands on top of it.
+
+### Measuring the skill itself
+
+```bash
+evals/run.sh              # runs /deslop on the fixtures in a fresh session and checks the result
+evals/run.sh --keep       # keep the workspaces to read agent-output.txt
+```
+
+Add a fixture from your own codebase (`evals/fixtures/<name>/` with an `entry`, a `check.sh`, and a behaviour test) to measure against the slop you actually see.
 
 ### Writer and reviewer in two sessions
 

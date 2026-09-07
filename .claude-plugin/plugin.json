@@ -1,6 +1,6 @@
 {
   "name": "clean-code",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Senior-engineer discipline for coding agents: write without AI slop, clean existing code in behaviour-preserving passes, interrogate finished changes, review diffs in a fresh context, and install lint gates. Every skill ends with a short analytics report.",
   "author": {
     "name": "Eshgin Mammadov",

@@ -109,6 +109,8 @@ Run for real:
 
 Design boundaries so mocking is natural: accept dependencies as parameters instead of constructing them inside; expose one function per external operation (`api.getUser(id)`, `api.createOrder(data)`) rather than one generic `api.fetch(endpoint, options)` that forces conditional logic into every mock.
 
+Module mocking (`vi.mock("./user-store")`, `jest.mock`, `monkeypatch.setattr` on an own module) is the tell that a seam is missing: the test rewires the import graph instead of passing a dependency. Add the parameter, pass an in-memory adapter, and the mock disappears along with the coupling to file paths.
+
 ## Bug fixes: red before green
 
 1. Write the test that reproduces the bug at the seam where the bug is observable. Run it. It fails.

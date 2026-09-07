@@ -35,6 +35,7 @@ Vocabulary and the catalog of what counts as slop live in the `/clean-code` skil
   - Rust: `cargo clippy`, `cargo build` warnings for `dead_code` and `unused`, `cargo machete` if installed.
   - Any: `npx aislop@latest scan` if the repo uses it; `git log --oneline -- <path>` to see which files change often (they matter most).
 - Where none exist, fall back to reading and grep over the tells in `RED-FLAGS.md`.
+- Run `${CLAUDE_SKILL_DIR}/../clean-code/scripts/complexity.sh <scope>` and record the baseline: function count, maximum, functions over budget, erosion, hotspots.
 
 ### 2. Run the passes, in order
 
@@ -50,6 +51,9 @@ Skip a pass with zero findings; never reorder.
 | 6 Naming | redundant qualifiers, generic names, synonyms for one concept | read the scope's public surface |
 | 7 Tests | tests that cannot fail on a plausible bug: tautological, duplicate, framework-testing, trivial-code, mock-call-asserting, implementation-coupled, skipped-without-ticket | read each test against "Which tests to write" in `TESTS.md`; for each deletion, name the remaining test that covers the behaviour, or the reason no coverage is needed |
 | 8 Filler | over-typed locals, decorative formatting, template scaffolding, generated boilerplate | read |
+| 9 Complexity hotspots | functions over the budget from the step-1 baseline, worst first | `complexity.sh`; skip the pass when it reported n/a |
+
+Pass 9 is structural, so it has its own rule: split a hotspot along its responsibilities, never at line counts. One focused function per case of a dispatcher; a lookup table for a ladder of `if`/`else`; a special case defined out of existence; a guard clause for the early exit. Tests stay at the public seam and must pass unchanged. A dispatcher at 91 paths becoming a 12-path dispatcher plus focused handlers is the shape to aim for. Record complexity before and after each hotspot.
 
 For each finding: apply the smallest edit that removes it, then continue. For each pass: run typecheck and the focused tests; on green, note the pass's stats (`git diff --shortstat`), on red, revert the pass and investigate before moving on.
 
@@ -68,12 +72,13 @@ End with this block. Numbers come from `scripts/diff-stats.sh <base>` in the `cl
 
 ```
 ## Deslop Report
-Scope     <path or range> · <N files inspected> · <M files changed>
-Diff      +<added> / -<removed> lines · net <±n>
-Passes    dead code <n> · comments <n> · abstractions <n> · defensive <n> · duplication <n> · naming <n> · tests <n> · filler <n>
-Gates     typecheck <pass|fail> · lint <pass|fail|n/a> · tests <before N/N> → <after N/N>
-Tools     <knip / ruff / vulture / deadcode / clippy: before → after, or n/a>
-Verdict   <behaviour preserved | reverted passes: ...>
+Scope       <path or range> · <N files inspected> · <M files changed>
+Diff        +<added> / -<removed> lines · net <±n>
+Passes      dead code <n> · comments <n> · abstractions <n> · defensive <n> · duplication <n> · naming <n> · tests <n> · filler <n> · hotspots <n>
+Gates       typecheck <pass|fail> · lint <pass|fail|n/a> · tests <before N/N> → <after N/N>
+Complexity  max <a> → <b> · over budget <a> → <b> · erosion <x%> → <y%>   (or n/a)
+Tools       <knip / ruff / vulture / deadcode / clippy: before → after, or n/a>
+Verdict     <behaviour preserved | reverted passes: ...>
 ```
 
 **Found, not changed**: behaviour bugs, out-of-scope slop, untestable code, each with a file and one line of reasoning.
