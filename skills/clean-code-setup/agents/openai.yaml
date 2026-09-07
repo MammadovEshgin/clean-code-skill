@@ -1,0 +1,5 @@
+interface:
+  display_name: "Clean Code Setup"
+  short_description: "Install lint gates, check command, CODING_STANDARDS.md"
+policy:
+  allow_implicit_invocation: false

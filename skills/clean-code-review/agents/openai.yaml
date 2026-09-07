@@ -1,0 +1,5 @@
+interface:
+  display_name: "Clean Code Review"
+  short_description: "Fresh-context review for slop, design flags, scope drift"
+policy:
+  allow_implicit_invocation: false

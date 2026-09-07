@@ -1,0 +1,37 @@
+# Clean-code gates for golangci-lint v2. Merge into .golangci.yml.
+# Whole-program dead code: `go run golang.org/x/tools/cmd/deadcode@latest ./...` (optional).
+
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - gocyclo
+    - gocognit
+    - funlen
+    - nestif
+    - unparam
+    - errorlint
+    - nilerr
+    - godox
+  settings:
+    gocyclo:
+      min-complexity: 10
+    gocognit:
+      min-complexity: 15
+    funlen:
+      lines: 60
+      statements: 40
+    nestif:
+      min-complexity: 4
+    godox:
+      keywords:
+        - TODO
+        - FIXME
+        - HACK
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - funlen
+          - gocognit

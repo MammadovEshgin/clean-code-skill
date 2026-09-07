@@ -1,0 +1,35 @@
+# Clean-code gates for Ruff.
+# Merge into pyproject.toml as shown. In a standalone ruff.toml, drop the "tool.ruff." prefix.
+# Dead code beyond what Ruff sees: `vulture src/` (optional).
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = [
+  "F",        # unused imports and variables, undefined names
+  "B",        # mutable defaults, unused loop variables, common pitfalls
+  "C901",     # cyclomatic complexity
+  "PLR0912",  # too many branches
+  "PLR0913",  # too many arguments
+  "PLR0915",  # too many statements
+  "SIM",      # simplifiable constructs
+  "RET",      # return consistency
+  "ARG",      # unused arguments
+  "ERA",      # commented-out code
+  "T20",      # print statements
+  "BLE",      # blind except
+  "UP",       # modern syntax
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 4
+max-branches = 10
+max-statements = 50
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR0913", "ARG", "T20"]
+"**/conftest.py" = ["ARG"]

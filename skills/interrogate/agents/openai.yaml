@@ -1,0 +1,5 @@
+interface:
+  display_name: "Interrogate"
+  short_description: "Challenge a finished change: delete, simplify, stop"
+policy:
+  allow_implicit_invocation: false

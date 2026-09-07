@@ -1,0 +1,52 @@
+# Sources
+
+What this repo took from where. Dates are the date of publication or of the last check (September 2026).
+
+## Posts that seeded the repo
+
+- George Pickett, [interrogation prompt](https://x.com/georgepickett/status/2095979879137460640) (Sep 4, 2026): "Think from first principles... is anything unnecessary, over-complicated, or based on weak assumptions? What can be deleted entirely? What can be simplified now that unnecessary pieces are gone? Prefer deleting over simplifying, simplifying over optimizing, optimizing over automating. It might be done too." Became `/interrogate` and step 5 of the core loop.
+- Emanuele Di Pietro, [repository audit prompt](https://x.com/emanueledpt/status/2096366700560363931) (Sep 5, 2026): "Audit this repository for low-value code: redundant tests, trivial wrappers, dead abstractions, duplicate helpers, stale comments, unnecessary ceremony. Verify each removal is safe, make the smallest cleanup, run focused tests and lint, and report what changed with evidence. Inspect every major directory before finishing." Became `/deslop`'s scope rule, verification rule, and completion criterion.
+- Ben Vinegar, [cyclomatic complexity audits](https://x.com/bentlegen/status/2092606355685216425) (Aug 26, 2026): a 25-line, four-branch block with five narration comments collapsed to two lines and one intent comment; 91 decision paths to 12. The before/after is the model for the complexity budget.
+- Alex Graveley, [quote post](https://x.com/alexgraveley/status/2092647694816707042) (Aug 26, 2026): "Just tell the LLM it has to pass cyclomatic complexity lint and it will write simpler code." Became `/clean-code-setup`.
+- Manish Kumar, [anti-slop announcement](https://x.com/Manixh02/status/2095720583006974439) (Sep 4, 2026), pointing at [miqdadbadjuber/anti-slop](https://github.com/miqdadbadjuber/anti-slop): rule tiers (hard gate, purpose gate, quality lock), a delivery gate, and the `antislop-code` comment catalog (Tell / Why / Fix). The comment tells in `RED-FLAGS.md` and `COMMENTS.md` follow its shape.
+- Matt Pocock, [@mattpocockuk](https://x.com/mattpocockuk). See the next section.
+
+## Matt Pocock
+
+- [mattpocock/skills](https://github.com/mattpocock/skills), read from the installed plugin (v1.2.0): `codebase-design` (module, interface, depth, seam, adapter, leverage, locality; the deletion test; "the interface is the test surface"; "one adapter means a hypothetical seam, two means a real one"; `DEEPENING.md`'s dependency categories), `tdd` (seams, implementation-coupled and tautological anti-patterns, vertical slices, `tests.md`, `mocking.md`), `code-review` (two-axis review in parallel sub-agents, Fowler smell baseline, repo standards override), `improve-codebase-architecture` (activity bias toward hot spots), `diagnosing-bugs` (a tight red-capable loop before any hypothesis), `writing-great-skills` (predictability, information hierarchy, leading words, no-ops, negation), `setup-ts-deep-modules` (entry points at the folder root, implementation in subfolders, prove the rules bite), `.agents/invocation.md` (model-invoked vs user-invoked).
+- [mattpocock/agent-rules-books](https://github.com/mattpocock/agent-rules-books): the `mini` rule sets for *A Philosophy of Software Design*, *Clean Code*, *Refactoring*, *The Pragmatic Programmer*, and `docs/CRITICISM.md` (no measurement, token cost, rules from real failures, over-engineering risk), which shaped the report, the size limits, and `CODING_STANDARDS.md`.
+- Posts: [grey box modules](https://x.com/mattpocockuk/status/2023346135965053258), [deep modules against garbage-in-garbage-out](https://x.com/mattpocockuk/status/2026960849512870063), [CODING_STANDARDS.md and /code-review](https://x.com/mattpocockuk/status/2088256432265167185) ("Notice the agent is doing something bad. Write it in CODING_STANDARDS.md. /code-review picks it up and enforces it at review time.").
+- [aihero.dev](https://www.aihero.dev): "How To Make Codebases AI Agents Love", the `/codebase-design` and `/improve-codebase-architecture` pages, the smart zone / dumb zone framing that motivates fresh-context review.
+
+## Anthropic
+
+- [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices): concise, third-person descriptions with triggers; body under 500 lines; references one level deep; feedback loops; evaluation-driven development; the checklist.
+- [Claude Code skills reference](https://code.claude.com/docs/en/skills): frontmatter fields (`disable-model-invocation`, `argument-hint`, `context: fork`, `agent`, `background`), `$ARGUMENTS`, `${CLAUDE_SKILL_DIR}`, spec-compliance notes.
+- [Claude Code best practices](https://code.claude.com/docs/en/best-practices): give Claude a check it can run; CLAUDE.md include/exclude table ("self-evident practices like 'write clean code'" are excluded); hooks for actions that must happen every time; the adversarial review step and its warning about over-reporting.
+- [The new rules of context engineering for Claude 5-generation models](https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models) (July 2026): over 80% of Claude Code's system prompt removed; "default to writing no comments" replaced by "write code that reads like the surrounding code: match its comment density, naming, and idiom"; rules to judgment; progressive disclosure; single authoritative source.
+- [Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices): the "Overeagerness" section (scope, documentation, defensive coding, abstractions), "Avoid focusing on passing tests and hardcoding", "Reduce file creation", "Overthinking" (remove over-prompting for newer models).
+- [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents): the right altitude between brittle rules and vague guidance; minimal high-signal tokens.
+- [anthropics/claude-code `skill-development`](https://github.com/anthropics/claude-code/tree/main/plugins/plugin-dev/skills/skill-development): imperative form, scripts for deterministic work, references for on-demand material.
+- Boris Cherny's tips (compiled in [joyrexus's gist](https://gist.github.com/joyrexus/e20ead11b3df4de46ab32b4a7269abe0)): treat CLAUDE.md as living rules updated after mistakes; plan first; ask for the elegant rewrite instead of patching.
+
+## OpenAI
+
+- Eric Provencher (Codex DX), [Rethinking skills and prompts for GPT-6 Astra](https://x.com/pvncher/article/2095991462416490862) (Sep 4, 2026): short descriptions; progressive disclosure; remove itinerary recipes, blanket "read everything" and "always run tests" nudges, and "ask first" gates; keep bounded permissions for safe workflows, hard rails for high-stakes actions, and explicit completion criteria.
+
+## Books and long-form
+
+- John Ousterhout, *A Philosophy of Software Design* (2018): the thesis (complexity), deep modules, the 14 red flags, define errors out of existence, comments as a design tool, pull complexity downward, design it twice. Read through [lukeramsden/software-design-agent-skill](https://github.com/lukeramsden/software-design-agent-skill) and Matt Pocock's `agent-rules-books` distillation.
+- Martin Fowler, *Refactoring* (2nd ed.), chapter 3: the smell baseline.
+- Google, [Engineering Practices: What to look for in a code review](https://google.github.io/eng-practices/review/reviewer/looking-for.html): complexity ("avoid over-engineering for hypothetical future needs"), comments ("explain why, not what").
+- Simon Willison, [agentic-engineering](https://simonwillison.net/tags/agentic-engineering/): verification over review; red-green TDD; James Shore's maintenance-cost framing.
+- Mitchell Hashimoto, [My AI Adoption Journey](https://mitchellh.com/writing/my-ai-adoption-journey) (Feb 2026): each line of AGENTS.md exists because of a past agent mistake; engineer the harness so the mistake cannot recur.
+
+## Tools and skill repos
+
+- [scanaislop/aislop](https://github.com/scanaislop/aislop): deterministic slop scanner (narrative comments, swallowed exceptions, `as any`, hallucinated imports, dead code, TODO stubs, oversized functions), CI gate, Claude Code hook. Referenced from `/deslop` and the CI recipe.
+- [tmdgusya/engineering-discipline `clean-ai-slop`](https://www.claudepluginhub.com/skills/tmdgusya-engineering-discipline/clean-ai-slop): lock behaviour before cleaning; one smell category per pass; run tests after every pass; stay in scope; preserve behaviour exactly. `/deslop`'s hard rules follow this.
+- [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills): think before coding, simplicity first, surgical changes, goal-driven execution.
+- [obra/superpowers `verification-before-completion`](https://github.com/obra/superpowers/blob/main/skills/verification-before-completion/SKILL.md): evidence before claims; the claim/requires table.
+- [btseee/clean-code-skills](https://github.com/btseee/clean-code-skills), [nghorbani/clean-code-skill](https://github.com/nghorbani/clean-code-skill): prior art surveyed; this repo takes the opposite bet on size (one short core, references on demand) and adds gates and reports.
+- [Vercel `react-best-practices`](https://github.com/vercel-labs/agent-skills): the rules-catalog layout with prefixes and one file per rule, adapted into `RED-FLAGS.md`.
+- [howardism.dev, Deep Modules for Agents](https://www.howardism.dev/articles/deep-modules-for-agents): push standards into reviewers, pull them on demand for implementers; review in a fresh context.

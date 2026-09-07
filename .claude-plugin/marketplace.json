@@ -1,0 +1,23 @@
+{
+  "name": "mammadoveshgin",
+  "owner": {
+    "name": "Eshgin Mammadov",
+    "url": "https://github.com/MammadovEshgin"
+  },
+  "description": "Clean-code skills for coding agents, installable as a Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "clean-code",
+      "source": "./",
+      "description": "Write without AI slop, deslop existing code, interrogate finished changes, review diffs in a fresh context, install lint gates. Every skill ends with a short analytics report.",
+      "category": "engineering",
+      "keywords": [
+        "clean-code",
+        "code-quality",
+        "ai-slop",
+        "refactoring",
+        "code-review"
+      ]
+    }
+  ]
+}

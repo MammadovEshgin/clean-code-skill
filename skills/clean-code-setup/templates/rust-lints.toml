@@ -1,0 +1,29 @@
+# Clean-code gates for Rust.
+#
+# Cargo.toml: paste the [lints.*] tables below. In a workspace, put them under
+# [workspace.lints.*] and add `[lints] workspace = true` to each member.
+#
+# clippy.toml (crate or workspace root):
+#   cognitive-complexity-threshold = 10
+#   too-many-arguments-threshold = 4
+#   too-many-lines-threshold = 60
+#
+# Unused dependencies: `cargo machete` (optional).
+
+[lints.rust]
+dead_code = "deny"
+unused_imports = "deny"
+unused_variables = "deny"
+unreachable_code = "deny"
+
+[lints.clippy]
+cognitive_complexity = "warn"
+too_many_arguments = "warn"
+too_many_lines = "warn"
+needless_pass_by_value = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+dbg_macro = "deny"
+print_stdout = "warn"
+todo = "warn"
+unimplemented = "warn"
