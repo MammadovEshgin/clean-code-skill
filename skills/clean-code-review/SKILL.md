@@ -45,7 +45,7 @@ For each finding record file and line, the named flag, the quoted lines, and the
 
 ## 5. Verify, then filter
 
-Re-check every finding against the code before it is written down. For a correctness finding, run the reproduction when it is cheap (a focused test, a one-line script) and score it with the rubric in `BUGS.md`; report at 80 and above. Drop, on every axis:
+Re-check every finding against the code before it is written down. For a correctness finding, run the reproduction when it is cheap (a focused test, a one-line script) and record severity, confidence, and reproduction as `BUGS.md` defines them; report `certain` and `likely`, drop `possible`. Drop, on every axis:
 
 - Pre-existing issues on lines the change did not touch (mention the worst one in a single closing line, nothing more).
 - Anything a linter, typechecker, or compiler in the repo reports.
@@ -70,8 +70,8 @@ Under 600 words. Findings first, ordered by severity within each axis. No fixes 
 - path/service.ts:10-48 · possible Pass-Through Method · `OrderService.create` forwards to `repo.create` unchanged → call the repository directly, or give the service a real contract
 
 ### Correctness
-- path/upload.ts:31 · path traversal · high · 95 · given `name = "../../etc/passwd"`, `join(root, name)` escapes the root; expected a rejection → resolve, then require the result to start with the root
-- test/orders.test.ts:88 · weakened check · high · 100 · the expected total was changed from 15 to 14.99 to match the new rounding → restore the test, fix the rounding
+- path/upload.ts:31 · path traversal · high · likely · not attempted · given `name = "../../etc/passwd"`, `join(root, name)` escapes the root; expected a rejection → resolve, then require the result to start with the root
+- test/orders.test.ts:88 · weakened check · high · certain · reproduced · the expected total was changed from 15 to 14.99 to match the new rounding → restore the test, fix the rounding
 
 ### Scope
 - path/other.ts · reformatted 30 untouched lines → revert

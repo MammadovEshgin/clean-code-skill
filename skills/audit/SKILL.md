@@ -17,7 +17,7 @@ The catalog is `${CLAUDE_SKILL_DIR}/../clean-code/BUGS.md`: the tells, the evide
 
 1. **A finding is a sentence.** "Given `<input>`, `<code>` does `<wrong outcome>`; expected `<right outcome>`." No sentence, no finding.
 2. **Red before green.** A fix lands only after a loop showed the failure: a test at the seam, a request with the payload, a script with the input. The loop ran, went red, and stays as the regression test.
-3. **Report at 80.** Score every candidate with the rubric in `BUGS.md`. Below 80 it is not raised. A finding with no loop caps at 75 and is reported as unproven, never fixed.
+3. **Report likely, fix reproduced.** Every finding carries severity, confidence, reproduction, and action as `BUGS.md` defines them. `certain` and `likely` are reported; `possible` is dropped. A fix requires a loop that went red; a `likely` finding whose loop cannot run here is reported as `not reproducible here` with the command that would prove it, never patched blind.
 4. **Fix, do not refactor.** The fix is the smallest change that makes the loop green. Cleanup belongs to `/deslop`; a fix commit that also tidies cannot be reviewed as a fix.
 5. **Stay in scope.** Pre-existing problems outside the scope go in the report with the input that reproduces them.
 6. **The repo's secure pattern first.** The existing query helper, authorization check, validator, or config loader is the fix; the standard library second; a new dependency last.
@@ -38,13 +38,13 @@ Done when every entry point has its sinks listed and the repo's own patterns are
 - Read the nearby code, not only the hunks. Callers and callees one level out; the bug is often in how the code is called, in the retry around it, or in the state it shares.
 - Hot spots first: the functions over the complexity budget and the files with the most recent churn (`git log --since='6 months ago' --name-only --format= -- <scope> | sort | uniq -c | sort -rn`).
 
-Done when every category in the catalog has been walked and every kept candidate has a sentence, a severity, and a score of 80 or more.
+Done when every category in the catalog has been walked and every kept candidate has a sentence, a severity, and a confidence of `likely` or better.
 
 ### 3. Prove
 
-For each finding, build the loop, in this order of preference: a failing test at the seam where the outcome is observable; a request or command with the payload against a running instance; a throwaway harness that calls the code path with the input. Run it and confirm it fails on the exact outcome in the sentence, not on something nearby. Tighten it: deterministic, seconds, no human in the loop.
+For each finding, build the loop, in this order of preference: a failing test at the seam where the outcome is observable; a request or command with the payload against a running instance; a throwaway harness that calls the code path with the input. Run it and confirm it fails on the exact outcome in the sentence, not on something nearby. Tighten it: deterministic, seconds, no human in the loop. When the environment cannot run the loop, write down the command that would, and mark the finding `not reproducible here`.
 
-Done when every finding to be fixed has a command that was run and went red, pasted into the notes.
+Done when every finding to be fixed has a command that was run and went red, pasted into the notes, and every other finding says why it was not run.
 
 ### 4. Fix
 
@@ -64,10 +64,10 @@ Remove instrumentation and throwaway harnesses (grep for the tag used). Run the 
 ## Audit Report
 Scope       <path or range> · <N files> · <E entry points>
 Fixed       <n> · bugs <n> · weaknesses <n> · security <n>   (each with a red-first test)
-Reported    <n> · unproven <n> · needs decision <n> · out of scope <n>
+Reported    <n> · not reproducible here <n> · needs decision <n> · out of scope <n>
 Severity    high <n> · medium <n> · low <n>
 Gates       check <pass|fail|n/a> · tests <before N/N> → <after M/M>
 Verdict     <clean | fixed <n>, review the list | needs decision: ...>
 ```
 
-Below the block, one line per finding: `file:line · category · severity · confidence · "given X, Y; expected Z" · fixed by <test name>` or `reported: <what would prove it>`. Nothing else.
+Below the block, one line per finding: `file:line · category · severity · <certain|likely> · <reproduced|not reproducible here> · "given X, Y; expected Z" · fixed by <test name>` or `reported: <what would prove it>`. Nothing else.

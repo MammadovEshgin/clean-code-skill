@@ -15,7 +15,7 @@ The catalog used by `/clean-code` (to avoid them while writing), `/audit` (to fi
 
 - **Trace data, not files.** Start at every entry point in scope (HTTP handler, CLI argument, queue consumer, file reader, webhook, cron job, environment variable) and follow each value to the sinks it reaches (database, shell, filesystem, network, template, `eval`, log, response). A bug is a path where a value can arrive in a state the sink does not expect. A security flaw is a path where an attacker controls that value.
 - **Name the failure.** A finding is written as "given `<input>`, `<code>` does `<wrong outcome>`; expected `<right outcome>`". A finding that cannot be written that way is a hunch; keep looking or drop it.
-- **Confidence before reporting.** Score each finding 0 to 100 with the rubric in [Evidence and fix protocol](#evidence-and-fix-protocol). Report at 80 and above. A senior engineer who cannot show the input that breaks the code does not raise the finding.
+- **Four facts before reporting.** Severity, confidence, reproduction, and action, as defined in [Evidence and fix protocol](#evidence-and-fix-protocol). Report `certain` and `likely`; fix only `reproduced`. A senior engineer who cannot name the input that breaks the code does not raise the finding.
 - **Contrast with defensive paranoia.** Inside a boundary, the types are trusted and a check on a guaranteed value is slop. At the boundary, a missing check on an untrusted value is a bug. Which side of the boundary a value sits on decides which rule applies.
 - **The repo's existing secure pattern wins.** When the codebase already has a parameterized query helper, an authorization middleware, a validated config loader, the fix uses it. A second way to do the same thing is a new place for the same bug.
 
@@ -98,19 +98,14 @@ These produce noise when raised in general. Raise one only with the specific inp
 
 ## Evidence and fix protocol
 
-**Confidence**, after Claude Code's own review rubric:
+Four separate facts per finding. Keep them separate; a strong concern that cannot be run here is still a concern.
 
-| Score | Meaning |
-|---|---|
-| 0 | Does not survive a second reading, or is pre-existing and out of scope |
-| 25 | Might be real; could not be verified |
-| 50 | Verified real; a nitpick or rare in practice |
-| 75 | Verified real, will be hit in practice, the current code is insufficient |
-| 100 | Confirmed by running it: the input was tried and the wrong outcome observed |
+- **Severity**: `high` when it is exploitable or wrong now (code execution, data breach, authorization bypass, data loss or corruption, wrong money); `medium` when it needs conditions but the impact is significant; `low` for defence in depth.
+- **Confidence**: `certain` (the input was run and the wrong outcome observed); `likely` (verified by reading: the concrete input and its path to the sink are named, and nothing in the code prevents it); `possible` (a pattern that matches, no concrete input yet).
+- **Reproduction**: `reproduced` (a loop exists and went red); `not reproducible here` (the environment cannot run it: no database, no network, no fixture); `not attempted`.
+- **Action**: `fixed`, `reported`, or `dropped`.
 
-Report at 80 and above. Below that, keep looking or let it go.
-
-**Severity**: `high` when it is exploitable or wrong now (code execution, data breach, authorization bypass, data loss or corruption, wrong money); `medium` when it needs conditions but the impact is significant; `low` for defence in depth.
+Rules: `certain` and `likely` are reported. `possible` is dropped once a second reading fails to make it `likely`; a deep audit may keep it as one line. A fix requires `reproduced`: the loop went red before the change and green after. A `likely` finding whose loop cannot run here is reported as `not reproducible here` with the input and the command that would prove it; it is never patched blind and never silently dropped. On the 0 to 100 scale Claude Code's review plugin uses, `certain` is 100, `likely` is 75, `possible` is 50 and below.
 
 **Fix rule**: red before green. Build the loop that shows the failure (a test at the seam where the bug is observable, a `curl`, a script with the payload), run it, watch it fail, fix, watch it pass, run the full suite, keep the test. The loop is the evidence; a fix without one is a guess. When no seam can express the failure, that is a finding about the architecture: report it with what was tried and do not patch blind.
 
