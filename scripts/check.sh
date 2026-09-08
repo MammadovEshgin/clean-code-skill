@@ -48,22 +48,40 @@ for sh in "$REPO"/skills/*/templates/*.sh "$REPO"/skills/*/scripts/*.sh "$REPO"/
   bash -n "$sh" || problem "$sh: shell syntax"
 done
 
-for js in "$REPO"/skills/*/templates/*.json "$REPO"/.claude-plugin/*.json; do
-  [ -f "$js" ] || continue
-  if command -v python >/dev/null 2>&1; then
-    python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$js" 2>/dev/null || problem "$js: invalid JSON"
-  elif command -v node >/dev/null 2>&1; then
-    node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$js" 2>/dev/null || problem "$js: invalid JSON"
-  fi
-done
+# A JSON parser that is known to work: `command -v python` can find the Windows Store alias that
+# opens a shop window instead of running, so each candidate is tried before it is trusted.
+json_tool=""
+if node -e "1" >/dev/null 2>&1; then json_tool="node"
+elif python3 -c "print(1)" >/dev/null 2>&1; then json_tool="python3"
+elif python -c "print(1)" >/dev/null 2>&1; then json_tool="python"
+fi
+json_valid() {
+  case "$json_tool" in
+    node) node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$1" 2>/dev/null ;;
+    python3|python) "$json_tool" -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$1" 2>/dev/null ;;
+  esac
+}
+if [ -z "$json_tool" ]; then
+  echo "skip  JSON validation (no working node or python found)"
+else
+  for js in "$REPO"/skills/*/templates/*.json "$REPO"/.claude-plugin/*.json; do
+    [ -f "$js" ] || continue
+    json_valid "$js" || problem "$js: invalid JSON"
+  done
+fi
 
-manifest_skills="$(python -c "import json; print(' '.join(json.load(open('$REPO/.claude-plugin/plugin.json', encoding='utf-8'))['skills']))" 2>/dev/null || true)"
+manifest_skills=""
+case "$json_tool" in
+  node) manifest_skills="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).skills.join(' '))" "$REPO/.claude-plugin/plugin.json" 2>/dev/null || true)" ;;
+  python3|python) manifest_skills="$("$json_tool" -c "import json,sys; print(' '.join(json.load(open(sys.argv[1], encoding='utf-8'))['skills']))" "$REPO/.claude-plugin/plugin.json" 2>/dev/null || true)" ;;
+esac
 for skill_md in "$REPO"/skills/*/SKILL.md; do
   dir="$(basename "$(dirname "$skill_md")")"
   case " $manifest_skills " in *"./skills/$dir "*) ;; *) [ -n "$manifest_skills" ] && problem "plugin.json does not list ./skills/$dir" ;; esac
 done
 
 bash "$REPO/scripts/test-hooks.sh" || problem "hook tests failed"
+bash "$REPO/scripts/test-slice.sh" || problem "slice.sh tests failed"
 
 if [ "$fail" -ne 0 ]; then
   echo "check: failures"; exit 1

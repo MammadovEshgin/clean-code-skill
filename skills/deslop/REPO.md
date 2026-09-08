@@ -6,10 +6,12 @@ Cleaning a whole codebase in one sitting fails in two ways. The context fills up
 
 ## Preflight
 
-- The working tree is clean (`git status --porcelain` prints nothing). Otherwise stop and say so; commit or stash first.
+- `.deslop/plan.md` already exists: this is a resume. Changes under `.deslop/` are expected; anything else in `git status --porcelain` must be clean. Skip to Run.
+- Otherwise the working tree is clean (`git status --porcelain` prints nothing). If not, stop and say so; commit or stash first.
 - On the default branch (`main`, `master`, or whatever `origin/HEAD` points at): create `deslop/<yyyy-mm-dd>` and switch to it. On any other branch: stay. Other branches are never touched; they receive the cleanup when this branch merges and they rebase.
 - Identify the check command: `CODING_STANDARDS.md` names it, or the umbrella script from `/clean-code-setup`, or typecheck plus lint plus the full suite assembled by hand. Run it now and record the baseline. A red baseline is recorded as it is; every gate below compares against the baseline, not against zero.
-- `.deslop/plan.md` already exists: this is a resume. Skip to Run.
+
+**Ownership.** The loop reverts only what it caused. `${CLAUDE_SKILL_DIR}/scripts/slice.sh` keeps the books: `snapshot` records the tree before a worker starts, `confine` reverts changes outside the slice that were not there at the snapshot, and `red-check` proves a fix against the pre-fix code. `.deslop/` is never reverted; it is the loop's own state and travels with every commit.
 
 ## Plan
 
@@ -39,19 +41,19 @@ Flags: audit on · structure on
 
 For each slice with status `pending`, in order:
 
-1. **Clean it in a fresh context.** Use the Agent tool with the `general-purpose` agent and this prompt, paths filled in:
+1. **Clean it in a fresh context.** First `bash <skill directory>/scripts/slice.sh snapshot`. Then use the Agent tool with the `general-purpose` agent and this prompt, paths filled in:
 
    > Read `<skill directory>/SKILL.md` and apply it with the scope `<slice paths>` and the flag `--refactor-only`. Rules for this run: touch nothing outside the scope; do not commit; create no files outside the scope except tests beside the code they cover; the existing tests are the behaviour lock, add characterization tests where they are thin. Return only the Deslop Report block, the "Found, not changed" list, and the "Suggested follow-ups" list.
 
    The worker sees nothing of the other slices or of the planning. That is the point: each slice gets the attention the first slice of a long session gets. Run workers one at a time. Two workers editing at once make each other's gates fail on half-finished files; parallel slices need separate worktrees, which this loop does not manage. A host without subagents runs the slice inline, and after the commit stops with a note that `/deslop repo` resumes when the context is getting long.
-2. **Confine the diff.** `git status --porcelain` shows only paths inside the slice, plus new tests beside them. Anything else is reverted (`git checkout -- <path>`, or deleted when untracked) and noted in the plan.
+2. **Confine the diff.** `bash <skill directory>/scripts/slice.sh confine <slice paths>`. It leaves the slice, `.deslop/`, and every change that existed at the snapshot alone, reverts the rest (tracked files back to `HEAD`, untracked files deleted), and prints what it reverted; note that list in the plan.
 3. **Gate.** Run the check command. The result must be no worse than the baseline: the same tests passing, or a difference explained by tests deleted or added in pass 10 of the worker's report. On red: revert the slice (`git checkout -- <slice paths>` and remove untracked files inside it), mark the row `reverted: <reason>`, continue with the next slice. Three reverts in a row mean the problem is outside the slices (a flaky suite, a global lint failure); stop and report.
 4. **Commit the cleanup.** `git add <slice paths> .deslop/plan.md`, then `refactor(deslop): <slice>` with the worker's report block as the body. One slice, one commit, revertible with `git revert`.
 5. **Audit it in a second fresh context**, unless `--refactor-only`. Same Agent tool, this prompt:
 
    > Read `<skill directory>/../audit/SKILL.md` and apply it with the scope `<slice paths>`. Rules for this run: touch nothing outside the scope; do not commit; every fix ships with a test that failed before it; report anything you cannot prove instead of changing it. Return only the Audit Report block and the findings list.
 
-   Confine and gate exactly as in steps 2 and 3. A fix whose test does not go red on the pre-fix code (`git stash` the fix, run the test, it must fail, `git stash pop`) is reverted. Commit as `fix(audit): <slice>` with the report as the body. No changes, no commit. The cleanup and the fixes are separate commits on purpose: a reviewer reads a refactor for "same behaviour" and a fix for "new behaviour, proven".
+   Snapshot, confine, and gate exactly as in steps 1 to 3. Then prove each fix: `bash <skill directory>/scripts/slice.sh red-check "<focused test command>" <production paths the fix changed>` puts the pre-fix production code back, runs the tests (the new regression tests stay in place), and restores the fix; a fix whose tests pass on the pre-fix code is unproven and is reverted. Commit as `fix(audit): <slice>` with the report as the body. No changes, no commit. The cleanup and the fixes are separate commits on purpose: a reviewer reads a refactor for "same behaviour" and a fix for "new behaviour, proven".
 6. **Record.** Update the row: `done <sha> · fix <sha | none> · net <±n> · CC max <a> → <b>`, or `reverted: <reason>`, or `untestable` when the worker found no test signal. Append the worker's "Found, not changed" items and the audit's reported findings to a `## Found, not changed` section at the end of the plan.
 
 A worker that returns partial output, or reports that it could not lock behaviour, counts as red for that slice.
