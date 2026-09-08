@@ -7,13 +7,17 @@
 #   scripts/install.sh --link          symlink instead of copy, so `git pull` in this repo updates the skills
 #   scripts/install.sh --codex         also install into .agents/skills (Codex and other Agent Skills hosts)
 #   scripts/install.sh --cursor        also install into .cursor/skills
+#   scripts/install.sh --replace       overwrite an existing skill directory instead of backing it up
 #
+# An existing skill directory with local changes is moved to <name>.bak-<timestamp> first, so edits
+# made after a skills.sh install survive. Identical directories and old symlinks are replaced in place.
 # Flags combine: scripts/install.sh --global --link --codex
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 scope="project"
 mode="copy"
+replace=0
 extra=()
 
 for arg in "$@"; do
@@ -23,7 +27,8 @@ for arg in "$@"; do
     --link) mode="link" ;;
     --codex) extra+=("agents") ;;
     --cursor) extra+=("cursor") ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --replace) replace=1 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "unknown flag: $arg" >&2; exit 1 ;;
   esac
 done
@@ -47,7 +52,17 @@ for dest in "${dests[@]}"; do
   for src in "$REPO"/skills/*/; do
     name="$(basename "$src")"
     target="$dest/$name"
-    rm -rf "$target"
+    if [ -L "$target" ] || [ "$replace" = 1 ]; then
+      rm -rf "$target"
+    elif [ -d "$target" ]; then
+      if diff -rq "${src%/}" "$target" >/dev/null 2>&1; then
+        rm -rf "$target"
+      else
+        backup="$target.bak-$(date +%Y%m%d%H%M%S)"
+        mv "$target" "$backup"
+        echo "kept your edited $name at $backup (use --replace to overwrite)"
+      fi
+    fi
     if [ "$mode" = "link" ]; then
       ln -s "${src%/}" "$target"
     else

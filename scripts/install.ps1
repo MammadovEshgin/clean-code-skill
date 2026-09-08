@@ -7,12 +7,24 @@
   .\scripts\install.ps1 -Global         personal install: ~\.claude\skills (every project)
   .\scripts\install.ps1 -Codex          also install into .agents\skills
   .\scripts\install.ps1 -Cursor         also install into .cursor\skills
+  .\scripts\install.ps1 -Replace        overwrite an existing skill directory instead of backing it up
+
+.NOTES
+  An existing skill directory with local changes is moved to <name>.bak-<timestamp> first, so edits
+  made after a skills.sh install survive. Identical directories are replaced in place.
 #>
 param(
   [switch]$Global,
   [switch]$Codex,
-  [switch]$Cursor
+  [switch]$Cursor,
+  [switch]$Replace
 )
+
+function Same-Tree($a, $b) {
+  $fa = Get-ChildItem -Recurse -File $a | ForEach-Object { $_.FullName.Substring($a.Length) + ":" + (Get-FileHash $_.FullName).Hash } | Sort-Object
+  $fb = Get-ChildItem -Recurse -File $b | ForEach-Object { $_.FullName.Substring($b.Length) + ":" + (Get-FileHash $_.FullName).Hash } | Sort-Object
+  return (($fa -join "`n") -eq ($fb -join "`n"))
+}
 
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
@@ -27,7 +39,15 @@ foreach ($dest in $dests) {
   New-Item -ItemType Directory -Force -Path $dest | Out-Null
   Get-ChildItem -Directory (Join-Path $repo "skills") | ForEach-Object {
     $target = Join-Path $dest $_.Name
-    if (Test-Path $target) { Remove-Item -Recurse -Force $target }
+    if (Test-Path $target) {
+      if ($Replace -or (Same-Tree $_.FullName $target)) {
+        Remove-Item -Recurse -Force $target
+      } else {
+        $backup = "$target.bak-" + (Get-Date -Format "yyyyMMddHHmmss")
+        Move-Item $target $backup
+        Write-Host "kept your edited $($_.Name) at $backup (use -Replace to overwrite)"
+      }
+    }
     Copy-Item -Recurse -Path $_.FullName -Destination $target
     Write-Host "installed $($_.Name) -> $target"
   }
