@@ -1,8 +1,8 @@
 # Deslop: repo scope
 
-Cleaning a whole codebase in one sitting fails in two ways. The context fills up halfway through and the second half gets less care than the first. Or one giant diff lands that nobody can review and nobody dares revert. The remedy is the one used for large-scale changes everywhere: plan, shard, and land each shard on its own. Google ships large-scale changes as shards that are tested and committed independently. Kent Beck keeps tidyings in their own small commits, apart from behaviour changes. Anthropic's harness for long-running agents gives each unit of work a fresh session, a progress file, and a commit, because an agent asked to do everything at once leaves the tree half done.
+A whole codebase in one sitting fails two ways: the context fills up and the second half gets less care, or one giant diff lands that nobody can review or revert. The remedy is the one large-scale changes use everywhere (Google's sharded LSCs, Kent Beck's separate tidying commits, Anthropic's fresh session per unit of work with a progress file): plan, shard, land each shard on its own.
 
-`/deslop repo` is that loop. The main session plans and keeps the books. A fresh-context worker cleans one slice; a second fresh-context worker audits it for bugs. The main session confines each diff, gates it, commits it, and records the result. Repeat. When every slice has landed, a structure phase fixes the layout. Stop at any point; `/deslop repo` resumes from the plan.
+`/deslop repo` is that loop. The main session plans and keeps the books. A fresh-context worker cleans one slice; a second audits it. The main session confines each diff, gates it, commits it, records the result, and repeats. After the last slice, a structure phase fixes the layout. Stop at any point; `/deslop repo` resumes from the plan.
 
 ## Preflight
 
