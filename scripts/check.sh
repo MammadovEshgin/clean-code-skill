@@ -63,6 +63,8 @@ for skill_md in "$REPO"/skills/*/SKILL.md; do
   case " $manifest_skills " in *"./skills/$dir "*) ;; *) [ -n "$manifest_skills" ] && problem "plugin.json does not list ./skills/$dir" ;; esac
 done
 
+bash "$REPO/scripts/test-hooks.sh" || problem "hook tests failed"
+
 if [ "$fail" -ne 0 ]; then
   echo "check: failures"; exit 1
 fi

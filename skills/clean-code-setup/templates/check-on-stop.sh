@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Claude Code Stop hook: when this session edited files, run the fast gates (lint and typecheck)
-# before the agent stops. Red output goes to stderr with exit 2, so the agent keeps working
-# until the gates are green. stop_hook_active guards against a loop.
+# before the agent stops. Red output goes to stderr with exit 2, so the agent keeps working.
+# The block is bounded: after three consecutive red stops the hook lets the agent stop and tells
+# the user, because a gate that stays red is usually outside the agent's change.
 #
 # /clean-code-setup fills FAST_CHECK with the repo's fast gate command. Left as the placeholder,
 # the script detects the stack and runs the usual commands.
 
 FAST_CHECK="__FAST_CHECK__"
+MAX_BLOCKS=3
 
 input="$(cat)"
 if command -v jq >/dev/null 2>&1; then
@@ -16,11 +18,19 @@ else
   if printf '%s' "$input" | grep -Eq '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then active=true; else active=false; fi
   session="$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
 fi
-[ "$active" = "true" ] && exit 0
 
-marker="${TMPDIR:-/tmp}/clean-code-${session:-none}.edited"
+tmp="${TMPDIR:-/tmp}"
+marker="$tmp/clean-code-${session:-none}.edited"
+counter="$tmp/clean-code-${session:-none}.stopblocks"
 [ -f "$marker" ] || exit 0
-if [ -z "$(git status --porcelain 2>/dev/null)" ]; then rm -f "$marker"; exit 0; fi
+if [ -z "$(git status --porcelain 2>/dev/null)" ]; then rm -f "$marker" "$counter"; exit 0; fi
+
+blocks="$(cat "$counter" 2>/dev/null || echo 0)"
+if [ "$active" = "true" ] && [ "$blocks" -ge "$MAX_BLOCKS" ]; then
+  rm -f "$counter"
+  printf '{"systemMessage":"clean-code: the fast gates are still red after %s attempts; letting the agent stop. Run the check command and fix by hand."}\n' "$MAX_BLOCKS"
+  exit 0
+fi
 
 run_gates() {
   if [ -n "$FAST_CHECK" ] && [ "$FAST_CHECK" != "__FAST_CHECK__" ]; then
@@ -47,11 +57,12 @@ run_gates() {
 
 out="$(run_gates 2>&1)"
 if [ $? -ne 0 ]; then
+  echo $((blocks + 1)) > "$counter"
   {
-    echo "clean-code: the fast gates are red. Fix these before stopping:"
+    echo "clean-code: the fast gates are red (attempt $((blocks + 1)) of $MAX_BLOCKS). Fix these before stopping:"
     printf '%s\n' "$out" | grep -v '^$' | tail -60
   } >&2
   exit 2
 fi
-rm -f "$marker"
+rm -f "$marker" "$counter"
 exit 0
