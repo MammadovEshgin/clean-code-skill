@@ -5,159 +5,68 @@ description: Senior-engineer discipline for writing and changing code without AI
 
 # Clean Code
 
-Write code a senior engineer would merge without comment. The enemy is **slop**: code that works, passes a glance, and still degrades the codebase because it carries narration comments, dead branches, one-call helpers, defensive paranoia, copy-pasted blocks, abstractions for futures that never arrive, and tests that cannot fail. Slop is complexity added at machine speed.
+Write code a senior engineer would merge without comment. The enemy is **slop**: code that works, passes a glance, and still degrades the codebase: narration comments, dead branches, one-call helpers, defensive paranoia, copy-pasted blocks, abstractions for futures that never arrive, tests that cannot fail. Slop is complexity added at machine speed.
 
-Three ideas govern everything below.
-
-- **Every line earns its place.** A line stays when deleting it would lose behaviour or information. Otherwise it goes.
-- **Match the codebase, then these defaults.** Read the surrounding code and mirror its comment density, naming, idiom, and structure. A repo's `CODING_STANDARDS.md` (or `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`) overrides this skill. Where the repo has no convention, the rules here apply.
-- **Evidence over confidence.** The burden of proof is on the author. A change ships with the command that proves it, the test that went red before it, and a plain statement of what was not verified.
+Three ideas govern everything below. **Every line earns its place**: a line stays when deleting it would lose behaviour or information. **Match the codebase, then these defaults**: mirror the surrounding comment density, naming, idiom, and structure; a repo's `CODING_STANDARDS.md` (or `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`) overrides this skill. **Evidence over confidence**: the burden of proof is on the author; a change ships with the command that proves it, the test that went red before it, and a plain statement of what was not verified.
 
 ## The loop
 
-Run this for every change, sized to the change. A one-line fix runs it in seconds; a feature runs it deliberately.
+Sized to the change: seconds for a one-line fix, deliberate for a feature.
 
-1. **Understand.** Read the code to be changed and its callers. Find the existing pattern for this kind of thing and reuse it. Name the **seam** (the interface the change lives behind) and the check that will prove it works. State assumptions. For any library outside the standard library, read the current docs or types before using it; recalled APIs go stale. When two readings of the request lead to materially different code, present them with a recommendation and ask.
-   Done when one sentence says what changes, where it lives, and how it is verified.
-2. **Shape.** Choose the smallest change that fully solves the request. Put new behaviour behind the smallest interface that hides it. For a non-trivial interface, sketch a second, radically different shape before committing to the first. Write the naive, obviously correct version first; optimize only against a measurement.
-3. **Write.** Apply the rules below.
-4. **Verify.** Run the check: typecheck, focused tests, lint, then the full suite once at the end. Close the loop with real execution where it applies: run the program, the request, the browser. Read the output. "Tests pass" means they ran in this session with zero failures.
-5. **Interrogate.** Before calling it done, challenge what was built from first principles: what is unnecessary, over-complicated, or resting on a weak assumption? What can be deleted entirely? What simplifies once the deleted pieces are gone? Prefer **deleting over simplifying, simplifying over optimizing, optimizing over automating**. Make the cuts. If it is already right, leave it alone.
+1. **Understand.** Read the code and its callers; reuse the existing pattern for this kind of thing. Name the **seam** (the interface the change lives behind) and the check that proves it. For a library outside the standard library, read its current docs or types; recalled APIs go stale. When two readings of the request lead to different code, present both with a recommendation and ask. Done when one sentence says what changes, where, and how it is verified.
+2. **Shape.** The smallest change that fully solves the request, behind the smallest interface that hides it. Sketch a second, radically different shape for any non-trivial interface. Write the naive, obviously correct version first; optimize only against a measurement.
+3. **Write.** Apply the gates and rules below.
+4. **Verify.** Typecheck, focused tests, lint, then the full suite once. Close the loop with real execution where it applies (run the program, the request, the browser). Read the output. "Tests pass" means they ran in this session with zero failures.
+5. **Interrogate.** What is unnecessary, over-complicated, or resting on a weak assumption? What can be deleted entirely, and what simplifies once it is gone? Prefer **deleting over simplifying, simplifying over optimizing, optimizing over automating**. Make the cuts; if it is already right, leave it alone.
 6. **Report.** End with the block in [Report](#report).
 
 ## Hard gates
 
-A change that fails one of these is not done.
+A change that fails one of these is not done. These eight rows are the checklist; there is no second list.
 
 | Gate | Standard |
 |---|---|
-| **Surgical** | Every changed line traces to the request. Adjacent code, comments, and formatting stay as they were; a comment that is not understood is left alone, never "cleaned up". Orphans created by the change (imports, variables, functions, files) are removed. Pre-existing dead code is reported, not touched. |
-| **Zero dead code** | No unused imports, variables, parameters, functions, exports, or files. No unreachable branches. No commented-out code. No stubs, placeholders, or scaffolding for later. Removal is complete: no compatibility shims, re-exports, or `_legacy` aliases unless asked. On a published surface (a package export, an API, a CLI flag) "unused" means unused by consumers outside the repo too; that removal is a decision, not a cleanup. |
-| **Comments carry information** | A comment stays only when it says something the code cannot: why, an invariant, a constraint, a non-obvious consequence, a link to the decision. Narration, restatement, banners, step numbers, and end-of-block markers go. |
-| **Structure follows need** | An abstraction earns its place by hiding a decision, naming a concept, or isolating something that varies. A helper with one caller that hides nothing is inlined; one that names a calculation may stay. An interface with one implementation is a hypothetical seam unless the second adapter exists or is named in writing (a test fake, a vendor boundary). No wrapper that only forwards, no option nobody sets, no configuration for what does not vary, no copy of a helper that already exists elsewhere. |
-| **Boundaries validate, internals trust** | Validate at the system edge (user input, network, files, external APIs). Inside, trust the types and invariants. Errors surface; a `catch` that swallows, a fallback that hides a failure, or a null check on a guaranteed value is a bug. |
-| **Safe by default** | Untrusted input is parsed once at the boundary. Queries are parameterized; shell, path, URL, and HTML sinks never receive raw strings. Authorization is checked at every entry point, for the object, not only the session. Secrets come from configuration. Every external call has a timeout; retries only where the operation is idempotent, and then bounded. A multi-step write is atomic or idempotent. Logs carry no secrets or personal data. Failure closes, never opens. The catalog is [BUGS.md](BUGS.md). |
-| **Tests can fail** | Every test protects a behaviour a caller depends on, at the public seam, and was seen red once. It asserts an outcome; it asserts an interaction only when the interaction is the contract (a charge captured once, an event published). Tests of framework behaviour, private internals, and duplicates of existing coverage are not written and are deleted when found; a test of trivial code stays only when that code is a contract a caller depends on (a default, a format). Fewer tests that can fail beat many that cannot. |
-| **Evidence before done** | The verification command ran in this session, its output was read, and it passed. A claim without a fresh run is a guess. Green was never reached by weakening the check: a test rewritten to match new behaviour, a skipped test, a lowered threshold, a suppression, or a stub is a finding, not a fix. |
+| **Surgical** | Every changed line traces to the request. Adjacent code, comments, and formatting stay as they were; a comment that is not understood is left alone. Orphans the change created (imports, variables, functions, files) are removed. Pre-existing dead code is reported, not touched. |
+| **Zero dead code** | No unused symbols, unreachable branches, commented-out code, stubs, placeholders, or scaffolding for later. Removal is complete: no shims, re-exports, or `_legacy` aliases unless asked. On a published surface (package exports, an API, a CLI flag), "unused" must include consumers outside the repo; that removal is a decision, not a cleanup. |
+| **Comments carry information** | A comment stays only when it says what the code cannot: why, an invariant, a constraint, a consequence, a link to the decision. Narration, restatement, banners, step numbers, and end markers go. The why that does not fit a comment goes in the commit body. |
+| **Structure follows need** | An abstraction earns its place by hiding a decision, naming a concept, or isolating what varies. A one-caller helper that hides nothing is inlined; one that names a calculation may stay. An interface with one implementation is a hypothetical seam unless a second adapter exists or is named in writing (a test fake, a vendor boundary). No forwarding wrapper, no option nobody sets, no config for what does not vary, no copy of a helper that exists elsewhere. |
+| **Boundaries validate, internals trust** | Parse untrusted input once at the edge (user input, network, files, external APIs) into a named type; inside, trust the types and invariants. Errors surface: a `catch` that swallows, a fallback that hides a failure, or a null check on a guaranteed value is a bug. |
+| **Safe by default** | Queries parameterized; shell, path, URL, and HTML sinks never receive raw strings. Authorization checked at every entry point for the object, not just the session. Secrets from configuration. Every external call has a timeout; retries only where the operation is idempotent, and then bounded. Multi-step writes atomic or idempotent. No secrets or personal data in logs. Failure closes, never opens. Catalog with evidence and fixes: [BUGS.md](BUGS.md). |
+| **Tests can fail** | Every test protects a behaviour a caller depends on, at the public seam, and was seen red once. It asserts an outcome; an interaction only when the interaction is the contract at an external boundary (a charge captured once, an event published). No tests of framework behaviour, private internals, or duplicates; a test of trivial code stays only when that value is a contract callers depend on. Expected values come from an independent source, never recomputed the way the code computes them. Mock only boundaries the project does not own; inject a dependency instead of mocking an own module. |
+| **Evidence before done** | The verification command ran in this session, its output was read, and it passed. Green was never reached by weakening the check: a test rewritten to match new behaviour, a skip, a lowered threshold, a suppression, or a stub is a finding, not a fix. A test changed on purpose carries the reason in the commit; a test deleted names the coverage that remains. |
 
 ## Writing rules
 
-### Simplicity
-- Write the minimum code that solves the problem. If 200 lines could be 50, rewrite.
-- One thing per line. An intermediate variable with a precise name beats a call chained into an index into a ternary.
-- Three similar lines beat a premature abstraction. Copy-pasted blocks with cosmetic variation are worse than both: reduce to the simplest correct form.
-- Inline the abstraction that has one user and hides nothing. Extract on the third caller, or when the extraction creates a real interface or names a concept the reader needs (see Structure).
-- Prefer a plain function to a class, a value to a flag, a lookup table to a recurring switch, a guard clause to nesting.
-- Keep the happy path at the top level and unindented; handle the special case early and return.
-- Design special cases out of existence: model "no selection" as an empty range rather than an `if (hasSelection)` at every use.
-- Inside the lines being touched, leave the design as it would be if the change had been known from the start. When the code being changed is the wrong shape and a clearly better shape exists (a smaller interface, a special case gone, one piece of knowledge in one place) and the seam tests pass unchanged, write the better shape. Outside the lines being touched, report what was seen and leave it.
-- A refactor that moves code without reducing what a reader must hold in their head is not an improvement.
+Only what the gates do not already say.
 
-### Structure: deep modules
-- A **module** (function, class, package, service) is deep when a lot of behaviour sits behind a small interface. Aim for that shape at every scale.
-- The **interface** is everything a caller must know: signature, invariants, ordering, error modes, configuration, performance. Keep all of it small.
-- Apply the **deletion test** to any layer: if deleting it makes complexity vanish, it was a pass-through. If complexity would reappear across callers, it earns its keep.
-- Pull complexity downward. A harder implementation that gives callers a simpler contract is the right trade.
-- One implementation of an interface means a hypothetical seam; two means a real one. Introduce the seam at two.
-- Keep each piece of knowledge in one place. When a format, rule, or mapping shows up in two modules, merge them or move the knowledge behind one simple interface.
-- Files mirror the module map: a module gets a folder, its public surface at the root, implementation and tests in subfolders. Outsiders import entry points only.
-- Length is not a reason to split. A 150-line function with one job and a simple signature is deep; six 25-line functions that only make sense together are shallow.
-- Layout, dependency direction, structure problems and their fixes, and language shape: [STRUCTURE.md](STRUCTURE.md).
-
-### Design for the day it goes wrong
-- Accept dependencies as parameters; do not construct them inside. Return results; do not mutate inputs or reach out for side effects the caller cannot see.
-- Make the operation total where the domain allows it, and make illegal states unrepresentable where it does not.
-- Keep pure logic separate from effects: a core that computes, an edge that reads and writes.
-- Every call across a process boundary has a timeout. Retry only what is idempotent, bounded and with backoff; a charge, an email, or any non-idempotent write is not retried blind.
-- A write that must succeed with another write runs in one transaction, or is designed so a retry converges.
-- Every resource has one owner and a close on the error path (`using`, `with`, `defer`, `try/finally`).
-- A check followed by an act on shared state is a race until it is atomic: a constraint, an upsert, a compare-and-set.
-- Bound the work to the input: paginate, stream, batch. A query inside a loop is a finding.
-- The failure catalog, with the evidence each entry needs: [BUGS.md](BUGS.md).
-
-### Naming
-- Names are precise (the name alone says what it holds) and consistent (one term per concept, never reused for another).
-- Length scales with scope: `i` in a five-line loop, `retryBudgetMs` across a module.
-- Booleans read as predicates (`isExpired`, `hasBalance`); functions as verbs; types as nouns.
-- Drop redundant qualifiers: `getUserFromDatabase` is `getUser` unless another source exists; `userAccountStatus` inside `User` is `status`.
-- A name that is hard to pick means the concept is muddled, usually two things. Split it.
-- Use the project's domain vocabulary (`CONTEXT.md`, glossary, existing names) rather than inventing synonyms.
-
-### Errors
-- First, define the error out of existence by making the operation total: `delete` ensures absence, `substring` clamps.
-- Handle each error once, at the level that can act on it. Let it propagate through levels that cannot.
-- Fail loudly on the impossible, and fail closed on the sensitive: an authorization check that errors denies.
-- Messages name what failed, what was expected, and the values involved.
-- Use the language's idiom for propagation (typed results, `%w` wrapping, `?`, specific exception classes) as the codebase already does.
-- Hierarchy and per-language idiom: [ERRORS.md](ERRORS.md).
-
-### Comments
-- Default density is the file's density. In a file with no comments, add one only for something genuinely non-obvious.
-- A good comment sits at a different level than the code: precision (units, boundaries, ownership, null semantics) or intuition (the sentence that explains the block).
-- Diagnostic: could a reader who has never seen this code write this comment from the code alone? If yes, delete it.
-- Docstrings state the contract for callers (what, preconditions, errors), never the implementation. Skip docstrings that restate the signature.
-- `TODO` carries an owner or ticket and a concrete task.
-- The why that does not fit a comment goes in the commit body: what was decided, what was ruled out. Agents start every session cold; unwritten intent is paid for again each time.
-- Keep and delete lists with examples: [COMMENTS.md](COMMENTS.md).
-
-### Tests
-- Write a test when a plausible bug would make it fail and a caller would care. Trivial code, getters, framework behaviour, and private helpers get none. Pick the level (unit, integration, end-to-end, contract, property) by the seam where the behaviour is observable, not by habit.
-- Test behaviour through the public interface, asserting state and outcomes. Assert an interaction only when the interaction is the contract at an external boundary. A test that must reach past the interface means the module is the wrong shape.
-- Expected values come from an independent source (a known literal, the spec), never recomputed the way the code computes them, and never by reading the artifact and asserting it contains itself.
-- Mock only at system boundaries the project does not own. Own modules run for real. Module mocking (`vi.mock`, `jest.mock`, patching an own module) replaces a real seam with a fake one; inject the dependency and use a real or in-memory adapter instead.
-- One behaviour per test, named as the capability ("rejects expired token"), not the mechanism. Self-contained over shared setup.
-- Red before green: for new behaviour, the test fails without the change; for a bug, it reproduces the bug before the fix.
-- A test changed to match new behaviour carries the reason in the commit. A test deleted names the coverage that remains.
-- Find the repo's real test command (`package.json`, `Makefile`, CI) instead of assuming one.
-- Good, bad, and mocking policy: [TESTS.md](TESTS.md).
-
-### Types and evidence
-- A type is a claim backed by evidence. Parse once at the boundary (schema, validator, decoder) into a named type, then trust it inside. `typeof` or `instanceof` narrowing away from the boundary, and `unknown`, `any`, `object`, or `Record<string, unknown>` in internal signatures, mean the evidence was thrown away.
-- Never launder a type. Widening a known value and asserting it back, chaining casts (`as object as User`), or casting to satisfy the compiler fabricates evidence. A necessary assertion carries a `SAFETY:` comment naming the invariant that makes it true.
-- Make illegal states unrepresentable: discriminated unions over boolean pairs, enums over strings, distinct ID types where mix-ups are plausible.
-- Suppressions (`@ts-ignore`, `# type: ignore`, `#[allow]`) appear only with a one-line reason. A type that is hard to name signals an unclear design.
-- Annotate public signatures and exported values; let inference carry the rest.
-
-### Instruction files
-- A markdown file an agent maintains fills, over time, with implementation details, session-specific observations, and stale docs. Write into `CLAUDE.md`, `AGENTS.md`, `README.md`, or a memory file only what cannot be found by reading the code or the config, and delete what has gone stale in the same edit.
-- A rule that must always hold belongs in a test, a lint rule, or a hook, not in prose.
-- When the user corrects a pattern, offer one dated line for `CODING_STANDARDS.md`. The review reads it on every run and enforces it; every mistake happens once.
+- **Simplicity.** If 200 lines could be 50, rewrite. One thing per line: an intermediate variable with a precise name beats a call chained into an index into a ternary. Three similar lines beat a premature abstraction; copy-pasted blocks with cosmetic variation are worse than both. Prefer a function to a class, a value to a flag, a lookup table to a recurring switch, a guard clause to nesting. Happy path unindented at the top; special cases handled early, or designed out of existence (an empty range instead of "no selection" checks). A refactor that moves code without reducing what a reader must hold in their head is not an improvement.
+- **The better shape.** Inside the lines being touched, leave the design as it would be had the change been known from the start. When the code being changed is the wrong shape and a clearly better one exists (a smaller interface, a special case gone, one piece of knowledge in one place) and the seam tests pass unchanged, write the better shape. Outside the lines being touched, report and leave it.
+- **Deep modules.** A lot of behaviour behind a small interface, at every scale. The interface is everything a caller must know: signature, invariants, ordering, errors, configuration, performance. Deletion test for any layer: complexity that vanishes when the layer is imagined away was a pass-through. Pull complexity downward; one piece of knowledge in one place; a module gets a folder with its public surface at the root. Length alone is no reason to split. Layout, dependency direction, structure problems and safe moves: [STRUCTURE.md](STRUCTURE.md).
+- **The day it goes wrong.** Accept dependencies as parameters; return results instead of mutating inputs. Pure core, effects at the edge. Total operations where the domain allows, illegal states unrepresentable where it does not. One owner per resource with a close on the error path. A check followed by an act on shared state is a race until it is atomic. Bound the work to the input: paginate, stream, batch; a query inside a loop is a finding.
+- **Naming.** Precise (the name alone says what it holds) and consistent (one term per concept). Length scales with scope. Booleans as predicates, functions as verbs, types as nouns. Drop redundant qualifiers. A hard-to-pick name means two concepts; split. Use the project's domain vocabulary.
+- **Errors.** Define the error out of existence first (`delete` ensures absence, `substring` clamps). Handle each error once, at the level that can act on it. Fail loudly on the impossible and closed on the sensitive. Messages name what failed, what was expected, and the values. The language's idiom, as the codebase already uses it: [ERRORS.md](ERRORS.md).
+- **Comments.** Default density is the file's. Precision (units, boundaries, ownership, null semantics) or intuition (the sentence that explains a block); never what a first-time reader could write from the code. Docstrings state the contract, not the implementation. `TODO` carries an owner or ticket and a concrete task. Keep and delete lists: [COMMENTS.md](COMMENTS.md).
+- **Tests.** Level (unit, integration, end-to-end, contract, property) by the seam where the behaviour is observable, not by habit. One behaviour per test, named as a capability, self-contained over shared setup. Red before green. Find the repo's real test command in `package.json`, the `Makefile`, or CI. Good, bad, mocking, mutation probes: [TESTS.md](TESTS.md).
+- **Types as evidence.** Parse once at the boundary; `typeof` narrowing inside, or `unknown`, `any`, `object`, `Record<string, unknown>` in internal signatures, means the evidence was thrown away. Never launder a type (widen then assert, chained casts, casts to satisfy the compiler); a necessary assertion carries a `SAFETY:` comment naming the invariant. Discriminated unions over boolean pairs, distinct ID types where mix-ups are plausible. Suppressions only with a one-line reason.
+- **Instruction files.** `CLAUDE.md`, `AGENTS.md`, `README.md`, and memory files fill with implementation details, session observations, and stale docs. Write only what cannot be found by reading the code, delete what has gone stale in the same edit, and put a rule that must always hold into a test, a lint rule, or a hook instead of prose. When the user corrects a pattern, offer one dated line for `CODING_STANDARDS.md`; the review enforces it from then on.
 
 ## Complexity budget
 
-Numbers a linter can enforce. Crossing one is a signal to restructure, not a rule to satisfy by extracting a meaningless helper.
+Numbers a linter can enforce; crossing one means restructure along responsibilities, not extract a meaningless helper.
 
 | Measure | Limit |
 |---|---|
 | Cyclomatic complexity per function | 10 |
 | Nesting depth | 3 |
-| Parameters | 4, bundling the rest into a typed object |
+| Parameters | 4, the rest in a typed object |
 | Function length | 50 lines is a smell to examine, not a limit |
 | File length | 400 lines is a signal to split by responsibility |
 
-`/clean-code-setup` wires these into the repo's linter. When a gate exists, passing it is part of done. `scripts/complexity.sh [path]` prints every function's complexity, the hotspots, and **erosion**: the share of complexity that sits in functions over the budget. A function far over budget is split along its responsibilities (one focused handler per case, a table for a ladder of conditions, a special case defined away), never chopped at line counts.
-
-## Done gate
-
-Copy and check every box before reporting completion.
-
-```
-- [ ] Every changed line traces to the request; nothing adjacent was "improved"
-- [ ] No dead code, stubs, commented-out code, or compatibility shims
-- [ ] Every remaining comment says something the code cannot
-- [ ] No abstraction with a single user; no option nobody sets; no duplicate of an existing helper
-- [ ] Validation at boundaries only; errors surface; no masking fallbacks; failure closes
-- [ ] Sinks are safe: parameterized queries, no raw strings into shell, path, URL, or HTML; authorization per entry point; bounded external calls
-- [ ] Names precise and consistent with the codebase
-- [ ] Complexity gates pass (or none exist yet)
-- [ ] Every new test asserts an outcome at a seam and was seen red; no test of trivial code, framework, or internals
-- [ ] Typecheck, lint, focused tests, full suite: run this session, output read, passing, nothing weakened to get there
-- [ ] Interrogated: nothing left to delete or simplify
-```
+`/clean-code-setup` wires these into the linter. `scripts/complexity.sh [path]` prints every function's complexity, the hotspots, and **erosion** (the share of complexity in functions over budget).
 
 ## Report
 
-Close every piece of work with this block. Fill the numbers from `scripts/diff-stats.sh [base]` and `scripts/complexity.sh [path]` (run from the repo root; need git and bash) and from the commands that actually ran. Ten lines or fewer.
+Close every piece of work with this block. Numbers from `scripts/diff-stats.sh [base]` and `scripts/complexity.sh [path]` (repo root; git and bash) and from the commands that actually ran. A gate that did not run says `n/a`, never `pass`.
 
 ```
 ## Clean Code Report
@@ -171,17 +80,12 @@ Left        <things noticed outside scope, or "nothing">
 Verdict     <ready | needs decision: ...>
 ```
 
-Report only what happened. A gate that did not run says `n/a`, never `pass`.
-
 ## Reference
 
-Load only what the task needs; every link is one level deep.
+Load the section the task needs, not the file: `grep -n '^##' <file>` shows the map. Every link is one level deep.
 
-- [RED-FLAGS.md](RED-FLAGS.md): the catalog. AI slop tells, Ousterhout's design red flags, Fowler's smells, each with its fix. Name the flag when reviewing.
-- [BUGS.md](BUGS.md): correctness, robustness, and security tells, the evidence each needs, the fix, the confidence rubric.
-- [COMMENTS.md](COMMENTS.md): comments to keep and delete, with examples.
-- [STRUCTURE.md](STRUCTURE.md): project layout, module shape, dependency direction, structure problems and safe moves, language notes.
-- [ERRORS.md](ERRORS.md): the four-tool hierarchy and per-language idiom.
-- [TESTS.md](TESTS.md): good tests, bad tests, mocking policy, mutation probes.
+- [RED-FLAGS.md](RED-FLAGS.md): slop tells by category, Ousterhout's red flags, Fowler's smells, complexity signals, each with its fix.
+- [BUGS.md](BUGS.md): correctness, robustness, and security tells with the evidence each needs; severity, confidence, reproduction.
+- [COMMENTS.md](COMMENTS.md), [STRUCTURE.md](STRUCTURE.md), [ERRORS.md](ERRORS.md), [TESTS.md](TESTS.md): as linked above.
 
-Companion skills: `/finish` takes a change from "it works" to ready-to-commit (interrogate, deslop, test audit, audit, gates, fresh-context review, findings applied); `/deslop` rewrites existing code into the shape a senior engineer would have written, behaviour locked, and `/deslop repo` does it for the whole codebase slice by slice with one commit per slice; `/audit` hunts bugs, weaknesses, and security flaws and fixes them red-test-first; `/test-audit` deletes tests that cannot fail, adds the ones that matter, and proves the suite with mutation probes; `/interrogate` and `/clean-code-review` run those pieces on their own; `/clean-code-setup` installs the lint gates, the hooks, and `CODING_STANDARDS.md`.
+Companion skills: `/finish` before a commit; `/deslop` and `/deslop repo` for existing code; `/audit`, `/test-audit`, `/interrogate`, `/clean-code-review` for the pieces; `/clean-code-setup` for the gates and hooks.

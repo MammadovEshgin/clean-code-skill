@@ -11,7 +11,7 @@ Read the code the way an attacker and the on-call engineer read it: where does e
 
 Scope: `$ARGUMENTS`. Empty means the uncommitted diff and the functions it calls. A git range means the changed hunks and their callees. A path means every entry point inside it. `--report-only` finds and proves but changes nothing.
 
-The catalog is `${CLAUDE_SKILL_DIR}/../clean-code/BUGS.md`: the tells, the evidence each one needs, the fix, the confidence rubric, and the exclusions. Read it before the first file.
+The catalog is `${CLAUDE_SKILL_DIR}/../clean-code/BUGS.md`: the tells, the evidence each one needs, the fix, the four facts per finding, and the exclusions. Read "How to apply", "Excluded", and "Evidence and fix protocol" first; load the correctness, robustness, and security sections as the hunt reaches them. When a caller hands over a change record (target, check commands, standards, baseline), use it and skip the matching parts of step 1.
 
 ## Hard rules
 

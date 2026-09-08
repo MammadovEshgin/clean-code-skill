@@ -11,7 +11,7 @@ Take existing code to the standard in the `/clean-code` skill without losing wha
 
 Scope: `$ARGUMENTS`. Empty means the uncommitted diff. A path or a git range runs the procedure below directly. `repo` means the whole codebase and follows [REPO.md](REPO.md) instead: plan the work as slices, run this procedure on each slice in a fresh context, gate and commit each slice on its own, resume from the plan when interrupted. Flags: `--plan` writes the repo plan and stops; `--refactor-only` skips the audit step; `--no-structure` skips the repo structure phase. Workers spawned by REPO.md read `${CLAUDE_SKILL_DIR}/SKILL.md` and run one slice.
 
-Vocabulary and the catalog of what counts as slop live in the `/clean-code` skill (`RED-FLAGS.md` beside it). Read that file before the first pass.
+Vocabulary and the catalog of what counts as slop live in the `/clean-code` skill (`RED-FLAGS.md` beside it). Load the catalog section for the pass at hand (`grep -n '^##' RED-FLAGS.md` shows the map), not the whole file. When a caller hands over a change record (purpose, target, check commands, standards, baseline), use it and skip the discovery in step 1.
 
 ## Hard rules
 
@@ -60,7 +60,7 @@ Skip a pass with zero findings; never reorder.
 
 **Pass 9** is where the code becomes what a senior engineer would have written, not merely what is left after deleting. Rewrite when the result is clearly better on a measure a reviewer can see: a smaller interface, fewer concepts a caller must hold, a special case gone, one piece of knowledge in one place, and the seam tests passing unchanged. The moves: merge shallow modules into a deep one; move leaked knowledge (a format, a rule, a schema) behind one interface; define a special case out of existence; parse once at the boundary and delete the internal re-checks; make illegal states unrepresentable (a union for a boolean pair, a distinct id type); inject a dependency that is constructed inside; replace a boolean flag parameter with two functions or a union; replace a repeated switch with a table; collapse a pass-through layer (deletion test); reorganize a temporal decomposition around what each module knows; bound an unbounded call (timeout, retry cap) where the missing bound is a defect the tests can lock. When a function is beyond repair, rewrite it from its tests and its interface rather than patching it. A reshape that would ripple beyond the scope, or that needs a decision, goes in the report as a proposal with the before and after shape.
 
-For each finding: apply the smallest edit that removes it, then continue. For each pass: run typecheck and the focused tests; on green, note the pass's stats (`git diff --shortstat`), on red, revert the pass and investigate before moving on.
+For each finding: apply the smallest edit that removes it, then continue. For each pass: run typecheck and the focused tests; on green, note the pass's stats (`git diff --shortstat`), on red, revert the pass and investigate before moving on. A pass with zero findings costs one line in the report, nothing more; the full suite and lint run once, in step 4.
 
 Commit per pass only when the user asked for commits. Otherwise keep the passes sequential and report them separately so the reviewer can follow. In `repo` scope the orchestrator commits per slice; a worker never commits.
 

@@ -14,6 +14,7 @@ Bugs, weaknesses, and security flaws have their own catalog, with the evidence e
 
 ## How to apply
 
+- Load by section, not by file: `grep -n '^##\|^###' RED-FLAGS.md` shows the map. `/deslop` pass 1 needs "Dead code", pass 2 "Comments", pass 3 "Abstraction", pass 4 "Defensive code", pass 5 "Abstraction" and "Fowler's smell baseline", pass 6 "Naming", pass 7 "Filler", pass 9 "Ousterhout's design red flags", pass 10 "Tests", pass 11 "Instruction files"; a review loads the sections the diff touches.
 - A documented repo standard always wins. Where `CODING_STANDARDS.md` endorses something below, the flag is suppressed.
 - Slop tells and complexity signals are near-mechanical: report them as violations.
 - Design red flags and smells are judgement calls: report them as "possible X", with the hunk quoted and the fix named.

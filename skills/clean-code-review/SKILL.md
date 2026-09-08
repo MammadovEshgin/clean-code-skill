@@ -12,7 +12,7 @@ background: false
 
 Review the change as a senior engineer who did not write it. This runs in a fresh context on purpose: the reviewer sees the diff, the code around it, and the standards, not the reasoning that produced the code. The bar is the one a reviewer at a strong company holds: a finding names a real consequence, is checked before it is raised, and comes with the fix.
 
-Arguments: `$ARGUMENTS`. The first is the base ref; the second, if present, is a spec, issue, or plan file describing what the change was supposed to do.
+Arguments: `$ARGUMENTS`. The first is the base ref; the second, if present, is a spec, issue, or plan file describing what the change was supposed to do. When the caller hands over a change record (purpose, target, checks, standards, risk markers), take the purpose and the standards list from it and skip the matching discovery in steps 1 and 2; still read the diff yourself.
 
 ## 1. Pin the diff
 
@@ -25,7 +25,7 @@ Arguments: `$ARGUMENTS`. The first is the base ref; the second, if present, is a
 In priority order; a higher source overrides a lower one.
 
 1. The repo's documented standards: `CODING_STANDARDS.md`, `CONTRIBUTING.md`, the code-style sections of `CLAUDE.md` or `AGENTS.md`.
-2. The catalogs beside the `clean-code` skill: `${CLAUDE_SKILL_DIR}/../clean-code/RED-FLAGS.md` (slop tells, Ousterhout's red flags, Fowler's smells, complexity signals) and `${CLAUDE_SKILL_DIR}/../clean-code/BUGS.md` (correctness, robustness, security, the confidence rubric).
+2. The catalogs beside the `clean-code` skill: `${CLAUDE_SKILL_DIR}/../clean-code/RED-FLAGS.md` (slop tells, Ousterhout's red flags, Fowler's smells, complexity signals) and `${CLAUDE_SKILL_DIR}/../clean-code/BUGS.md` (correctness, robustness, security, the four facts per finding). Load the sections the diff calls for (`grep -n '^##'` shows the map): the security section only when untrusted input or a sink is in the diff, the async section only when there is concurrency, and so on.
 3. The surrounding code's own conventions, read from the files the diff touches.
 
 Skip anything the repo's linter already enforces.

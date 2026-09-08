@@ -13,6 +13,7 @@ The catalog used by `/clean-code` (to avoid them while writing), `/audit` (to fi
 
 ## How to apply
 
+- **Load by section.** `grep -n '^##\|^###' BUGS.md` shows the map. Read this section, "Excluded", and "Evidence and fix protocol" always; load "Correctness" subsections as the code calls for them (async only where there is concurrency, time only where there are dates, and so on), "Robustness" for anything that calls out of process, "Security" only when untrusted input or a sink is in scope. A deep audit walks every section.
 - **Trace data, not files.** Start at every entry point in scope (HTTP handler, CLI argument, queue consumer, file reader, webhook, cron job, environment variable) and follow each value to the sinks it reaches (database, shell, filesystem, network, template, `eval`, log, response). A bug is a path where a value can arrive in a state the sink does not expect. A security flaw is a path where an attacker controls that value.
 - **Name the failure.** A finding is written as "given `<input>`, `<code>` does `<wrong outcome>`; expected `<right outcome>`". A finding that cannot be written that way is a hunch; keep looking or drop it.
 - **Four facts before reporting.** Severity, confidence, reproduction, and action, as defined in [Evidence and fix protocol](#evidence-and-fix-protocol). Report `certain` and `likely`; fix only `reproduced`. A senior engineer who cannot name the input that breaks the code does not raise the finding.

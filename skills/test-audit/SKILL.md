@@ -11,7 +11,7 @@ A suite is measured by one thing: it goes red when the code is wrong. A test tha
 
 Scope: `$ARGUMENTS`. Empty means the tests that the uncommitted diff touches, plus the seams the diff changed that have no test. A path means every test in it and every public seam in it. A git range means the same for the changed files.
 
-The rules and examples are in `${CLAUDE_SKILL_DIR}/../clean-code/TESTS.md`. Read it before the first test file.
+The rules and examples are in `${CLAUDE_SKILL_DIR}/../clean-code/TESTS.md`; read "Which tests to write", "Anti-patterns", and "Mutation probes". When a caller hands over a change record (target, check commands, baseline), use it and skip the matching parts of step 1.
 
 ## Hard rules
 
@@ -32,7 +32,7 @@ Done when every test file maps to a seam and every seam has its test files, or "
 
 ### 2. Classify every test
 
-One row per test: **keep**, **rewrite**, **merge**, or **delete**, with the tell.
+Read every test and give it a verdict: **keep**, **rewrite**, **merge**, or **delete**. Write a row only for rewrite, merge, and delete, with the tell; keeps are counted, not listed.
 
 | Verdict | Tells |
 |---|---|
@@ -41,7 +41,7 @@ One row per test: **keep**, **rewrite**, **merge**, or **delete**, with the tell
 | merge | several tests whose inputs belong to the same class; one table-driven test with one row per distinct class |
 | keep | one behaviour at a seam, an expected value from an independent source, one reason to fail |
 
-Done when every test in scope has a row.
+Done when every test in scope has a verdict and every non-keep verdict has a row.
 
 ### 3. Act
 

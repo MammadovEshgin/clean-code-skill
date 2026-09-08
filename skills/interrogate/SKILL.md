@@ -13,7 +13,7 @@ Target: `$ARGUMENTS`. Empty means the uncommitted diff (`git diff HEAD`); a ref 
 
 ## Questions
 
-Answer each in writing, against the actual diff, before touching anything.
+Answer each in a line or two, against the actual diff, before touching anything. When a caller hands over a change record, its purpose line answers the first question.
 
 1. **What is this change for?** One sentence, from the user's point of view, without reference to the implementation.
 2. **What is unnecessary, over-complicated, or resting on a weak assumption?** Challenge each assumption: is it true, and is it needed?
