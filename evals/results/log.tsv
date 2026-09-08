@@ -1,0 +1,11 @@
+date	claude	fixture	arm	run	verdict	seconds	input_tokens	output_tokens	cost_usd	turns
+2026-09-08T15:44Z	2.1.258 (Claude Code)	ts-clean	skills	1	FAIL	359	783124	21482	2.8808645000000004	25
+2026-09-08T15:49Z	2.1.258 (Claude Code)	ts-clean	skills	1	PASS	211	419350	13998	1.91699525	24
+2026-09-08T15:52Z	2.1.258 (Claude Code)	ts-audit	skills	1	PASS	145	477165	9278	1.41999475	18
+2026-09-08T15:56Z	2.1.258 (Claude Code)	ts-test-audit	skills	1	PASS	228	333179	16117	1.7621315000000002	13
+2026-09-08T15:57Z	2.1.258 (Claude Code)	ts-clean	baseline	1	PASS	37	103978	1607	0.50800575	5
+2026-09-08T15:57Z	2.1.258 (Claude Code)	ts-clean	baseline	1	PASS	40	215061	1330	0.55819275	8
+2026-09-08T16:27Z	2.1.258 (Claude Code)	ts-audit	baseline	1	PASS	1830	256457	4821	0.758266	13
+2026-09-08T16:28Z	2.1.258 (Claude Code)	ts-audit	baseline	1	PASS	1824	293064	4214	1.0706145	14
+2026-09-08T16:29Z	2.1.258 (Claude Code)	ts-test-audit	baseline	1	PASS	65	104069	4071	0.6317025000000001	6
+2026-09-08T16:29Z	2.1.258 (Claude Code)	ts-test-audit	baseline	1	PASS	103	182863	5272	0.7920170000000001	9

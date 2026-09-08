@@ -55,9 +55,16 @@ All rows are in `evals/results/log.tsv`; this table is a summary of it, Claude C
 | `ts-repo` | skills, 2026-09-08 (2.0.0) | interrupted: both slices landed as `refactor(deslop)` commits with the slop gone, then the account's session limit cut the run before the audit and finish phases; not a pass |
 | `ts-audit` | skills, 2026-09-08 (2.0.0) | PASS, 102s; both fixed, red-first tests |
 | `ts-test-audit` | skills, 2026-09-08 (2.0.0) | PASS, 214s; deleted 3, rewritten 1, added 4; probes 7/7 |
-| `ts-clean` | skills, 2026-09-08 (2.1.0, first run) | FAIL for the right reason: the audit found a real bug in the fixture (`format` lost the sign under one whole unit) and fixed it red-first; 359s, 783k input and 21k output tokens, $2.88. The fixture was corrected and rerun; see the log |
+| `ts-clean` | skills, 2026-09-08 (2.1.0, first run) | FAIL for the right reason: the audit found a real bug in the fixture (`format` lost the sign under one whole unit) and fixed it red-first; 359s, 783k input and 21k output tokens, $2.88. The fixture was corrected and rerun |
+| `ts-clean` | skills, 2026-09-08 (2.1.0, corrected fixture) | PASS, 211s; production file byte-identical; 419k input and 14k output tokens, $1.92, 24 turns |
+| `ts-audit` | skills, 2026-09-08 (2.1.0) | PASS, 145s; both fixes proven red-first by the check itself; 477k input and 9k output tokens, $1.42, 18 turns |
+| `ts-test-audit` | skills, 2026-09-08 (2.1.0) | PASS, 228s; three mutants killed by the check; 333k input and 16k output tokens, $1.76, 13 turns |
 
-Rows for the 2.1.0 reruns and the baseline arm are in the log as they complete. A table entry is written from a log row, never the other way round.
+| `ts-clean` | baseline, 2026-09-08, two runs | PASS both; 37s and 40s; 104k and 215k input tokens; $0.51 and $0.56 |
+| `ts-audit` | baseline, 2026-09-08, two runs | PASS both; 1,830s and 1,824s (the runs were slow, cause not investigated); 256k and 293k input tokens; $0.76 and $1.07 |
+| `ts-test-audit` | baseline, 2026-09-08, two runs | PASS both; 65s and 103s; 104k and 183k input tokens; $0.63 and $0.79 |
+
+**What the baseline arm shows.** On these three fixtures the bare model with a one-sentence prompt passed the same mechanical checks the skills passed, including the red-first check in `ts-audit` and the mutants in `ts-test-audit`, at a third to a quarter of the cost. The fixtures are small and the problems are planted and obvious, so this is the expected result for a strong 2026 model; it means the fixtures cannot show an advantage for the skills, only catch regressions in them. What the skills add on these runs is process, not outcome: a report with numbers, an `Unverified` line, findings with severity and confidence, a design proposal that was recorded rather than made. Whether that is worth two to five times the tokens is a question for harder fixtures (unplanted bugs, multi-step features, code where the bare model over-changes), which do not exist here yet. A table entry is written from a log row, never the other way round.
 
 ## Add a fixture
 
@@ -75,7 +82,7 @@ Keep fixtures small enough to read in a minute and specific enough that a failur
 
 ## Honest limits
 
-- Seven small fixtures and single runs. They catch regressions in the skills and give repeatable, dated numbers; they do not establish that the skills beat the same model without them until the baseline arm has enough runs on the same fixtures. Run `--baseline` and `--runs 3` and compare rows in the log.
+- Seven small fixtures. They catch regressions in the skills and give repeatable, dated numbers. On the three fixtures with a baseline arm, the bare model passed the same checks at lower cost, so they do not show that the skills beat the same model without them; harder fixtures are needed before that claim can be tested at all.
 - Checks test what can be checked mechanically: patterns, behaviour tests, commits, mutants. They do not measure reviewer effort, bugs outside the planted ones, or quality of design.
 - Coverage is TypeScript and Python on Windows 11 with Git Bash and Claude Code. Other hosts, operating systems, and the Go and Rust gates are untested here.
 - One `ts-clean` run cost $2.88 and 783k input tokens (mostly cache reads); the audit and the test audit are not free. The log exists so the cost is known rather than guessed.
