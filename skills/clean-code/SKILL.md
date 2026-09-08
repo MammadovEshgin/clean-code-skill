@@ -32,12 +32,12 @@ A change that fails one of these is not done.
 | Gate | Standard |
 |---|---|
 | **Surgical** | Every changed line traces to the request. Adjacent code, comments, and formatting stay as they were; a comment that is not understood is left alone, never "cleaned up". Orphans created by the change (imports, variables, functions, files) are removed. Pre-existing dead code is reported, not touched. |
-| **Zero dead code** | No unused imports, variables, parameters, functions, exports, or files. No unreachable branches. No commented-out code. No stubs, placeholders, or scaffolding for later. Removal is complete: no compatibility shims, re-exports, or `_legacy` aliases unless asked. |
+| **Zero dead code** | No unused imports, variables, parameters, functions, exports, or files. No unreachable branches. No commented-out code. No stubs, placeholders, or scaffolding for later. Removal is complete: no compatibility shims, re-exports, or `_legacy` aliases unless asked. On a published surface (a package export, an API, a CLI flag) "unused" means unused by consumers outside the repo too; that removal is a decision, not a cleanup. |
 | **Comments carry information** | A comment stays only when it says something the code cannot: why, an invariant, a constraint, a non-obvious consequence, a link to the decision. Narration, restatement, banners, step numbers, and end-of-block markers go. |
-| **Structure follows need** | Nothing exists for a caller that does not yet exist: no helper with one call site, no wrapper that only forwards, no interface with one implementation, no option nobody sets, no configuration for what does not vary. No copy of a helper that already exists elsewhere. |
+| **Structure follows need** | An abstraction earns its place by hiding a decision, naming a concept, or isolating something that varies. A helper with one caller that hides nothing is inlined; one that names a calculation may stay. An interface with one implementation is a hypothetical seam unless the second adapter exists or is named in writing (a test fake, a vendor boundary). No wrapper that only forwards, no option nobody sets, no configuration for what does not vary, no copy of a helper that already exists elsewhere. |
 | **Boundaries validate, internals trust** | Validate at the system edge (user input, network, files, external APIs). Inside, trust the types and invariants. Errors surface; a `catch` that swallows, a fallback that hides a failure, or a null check on a guaranteed value is a bug. |
-| **Safe by default** | Untrusted input is parsed once at the boundary. Queries are parameterized; shell, path, URL, and HTML sinks never receive raw strings. Authorization is checked at every entry point, for the object, not only the session. Secrets come from configuration. Every external call has a timeout and a bounded retry. A multi-step write is atomic or idempotent. Logs carry no secrets or personal data. Failure closes, never opens. The catalog is [BUGS.md](BUGS.md). |
-| **Tests can fail** | Every test protects a behaviour a caller depends on, at the public seam, asserts an outcome rather than an interaction, and was seen red once. Tests of trivial code, framework behaviour, private internals, and duplicates of existing coverage are not written, and are deleted when found. Fewer tests that can fail beat many that cannot. |
+| **Safe by default** | Untrusted input is parsed once at the boundary. Queries are parameterized; shell, path, URL, and HTML sinks never receive raw strings. Authorization is checked at every entry point, for the object, not only the session. Secrets come from configuration. Every external call has a timeout; retries only where the operation is idempotent, and then bounded. A multi-step write is atomic or idempotent. Logs carry no secrets or personal data. Failure closes, never opens. The catalog is [BUGS.md](BUGS.md). |
+| **Tests can fail** | Every test protects a behaviour a caller depends on, at the public seam, and was seen red once. It asserts an outcome; it asserts an interaction only when the interaction is the contract (a charge captured once, an event published). Tests of framework behaviour, private internals, and duplicates of existing coverage are not written and are deleted when found; a test of trivial code stays only when that code is a contract a caller depends on (a default, a format). Fewer tests that can fail beat many that cannot. |
 | **Evidence before done** | The verification command ran in this session, its output was read, and it passed. A claim without a fresh run is a guess. Green was never reached by weakening the check: a test rewritten to match new behaviour, a skipped test, a lowered threshold, a suppression, or a stub is a finding, not a fix. |
 
 ## Writing rules
@@ -46,7 +46,7 @@ A change that fails one of these is not done.
 - Write the minimum code that solves the problem. If 200 lines could be 50, rewrite.
 - One thing per line. An intermediate variable with a precise name beats a call chained into an index into a ternary.
 - Three similar lines beat a premature abstraction. Copy-pasted blocks with cosmetic variation are worse than both: reduce to the simplest correct form.
-- Inline the abstraction that has one user. Extract on the third caller, or when the extraction creates a real interface (see Structure).
+- Inline the abstraction that has one user and hides nothing. Extract on the third caller, or when the extraction creates a real interface or names a concept the reader needs (see Structure).
 - Prefer a plain function to a class, a value to a flag, a lookup table to a recurring switch, a guard clause to nesting.
 - Keep the happy path at the top level and unindented; handle the special case early and return.
 - Design special cases out of existence: model "no selection" as an empty range rather than an `if (hasSelection)` at every use.
@@ -68,7 +68,7 @@ A change that fails one of these is not done.
 - Accept dependencies as parameters; do not construct them inside. Return results; do not mutate inputs or reach out for side effects the caller cannot see.
 - Make the operation total where the domain allows it, and make illegal states unrepresentable where it does not.
 - Keep pure logic separate from effects: a core that computes, an edge that reads and writes.
-- Every call across a process boundary has a timeout, a bounded retry with backoff, and an idempotent target when it can be retried.
+- Every call across a process boundary has a timeout. Retry only what is idempotent, bounded and with backoff; a charge, an email, or any non-idempotent write is not retried blind.
 - A write that must succeed with another write runs in one transaction, or is designed so a retry converges.
 - Every resource has one owner and a close on the error path (`using`, `with`, `defer`, `try/finally`).
 - A check followed by an act on shared state is a race until it is atomic: a constraint, an upsert, a compare-and-set.
@@ -102,7 +102,7 @@ A change that fails one of these is not done.
 
 ### Tests
 - Write a test when a plausible bug would make it fail and a caller would care. Trivial code, getters, framework behaviour, and private helpers get none. Pick the level (unit, integration, end-to-end, contract, property) by the seam where the behaviour is observable, not by habit.
-- Test behaviour through the public interface, asserting state and outcomes, never interactions. A test that must reach past the interface means the module is the wrong shape.
+- Test behaviour through the public interface, asserting state and outcomes. Assert an interaction only when the interaction is the contract at an external boundary. A test that must reach past the interface means the module is the wrong shape.
 - Expected values come from an independent source (a known literal, the spec), never recomputed the way the code computes them, and never by reading the artifact and asserting it contains itself.
 - Mock only at system boundaries the project does not own. Own modules run for real. Module mocking (`vi.mock`, `jest.mock`, patching an own module) replaces a real seam with a fake one; inject the dependency and use a real or in-memory adapter instead.
 - One behaviour per test, named as the capability ("rejects expired token"), not the mechanism. Self-contained over shared setup.

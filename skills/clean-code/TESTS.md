@@ -16,10 +16,10 @@ Worth writing:
 
 Not worth writing:
 
-- Tests of trivial code: getters, setters, constructors, pass-through functions, constants, type definitions.
+- Tests of trivial code: getters, setters, constructors, pass-through functions, constants, type definitions. Exception: a trivial value that is a contract callers depend on (a default, a serialization format, a public error code) gets one test.
 - Tests that a framework, library, or language feature works.
 - Tests of private functions and internal helpers; test them through the public behaviour they support.
-- Tests that assert a mock was called; they verify the collaboration, not the outcome.
+- Tests that assert a mock was called to verify an internal collaboration; they cement the implementation, not the outcome. Exception: when the call itself is the contract at an external boundary (a charge captured exactly once, a message published, an audit event written), assert it there.
 - Duplicates of existing coverage with cosmetic changes to the input.
 - Snapshot tests of large output that nobody reads when they change.
 - Tests written to raise a coverage number.
@@ -31,7 +31,7 @@ Coverage is a symptom, not a goal. A module with three tests that can fail is be
 ## What a good test is
 
 - It verifies behaviour through the public interface. The implementation can change entirely; the test should not.
-- It asserts state and outcomes, never interactions. "The order is confirmed" survives a refactor; "`process` was called with the total" does not.
+- It asserts state and outcomes. "The order is confirmed" survives a refactor; "`process` was called with the total" does not. The one interaction worth asserting is a contract at an external boundary: the charge happened once, the event went out.
 - It reads like a specification: `"user can check out with a valid cart"`, `"rejects an expired token"`.
 - Its expected values come from an independent source: a known literal, a worked example, the spec.
 - It exercises one behaviour and makes one logical assertion.

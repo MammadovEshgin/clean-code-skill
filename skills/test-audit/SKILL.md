@@ -36,7 +36,7 @@ One row per test: **keep**, **rewrite**, **merge**, or **delete**, with the tell
 
 | Verdict | Tells |
 |---|---|
-| delete | tautological (the expected value is computed the way the code computes it, or the test reads an artifact and asserts it contains itself); asserts that a mock was called; tests the framework, the language, or a library; tests trivial code (getter, constant, type, pass-through); duplicates another test with cosmetic input changes; has no assertion; skipped or commented out without a ticket; snapshots output nobody reads |
+| delete | tautological (the expected value is computed the way the code computes it, or the test reads an artifact and asserts it contains itself); asserts that an internal collaborator was called (a call to an external boundary that is the contract stays); tests the framework, the language, or a library; tests trivial code no caller depends on as a contract; duplicates another test with cosmetic input changes; has no assertion; skipped or commented out without a ticket; snapshots output nobody reads |
 | rewrite | reaches past the interface (private state, spies on internals, verifies through a side channel); mocks an own module (`vi.mock`, `jest.mock`, `monkeypatch` on project code) instead of injecting through the seam; depends on real time, `sleep`, ordering, or state left by another test; named for the mechanism instead of the behaviour |
 | merge | several tests whose inputs belong to the same class; one table-driven test with one row per distinct class |
 | keep | one behaviour at a seam, an expected value from an independent source, one reason to fail |

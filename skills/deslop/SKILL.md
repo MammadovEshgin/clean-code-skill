@@ -20,7 +20,7 @@ Vocabulary and the catalog of what counts as slop live in the `/clean-code` skil
 3. **Verify after every pass.** Typecheck plus the focused tests. A failing pass is reverted, not patched forward.
 4. **Passes preserve behaviour exactly.** A cleanup that changes observable behaviour is reverted even when the new behaviour looks better, and recorded for the audit step. Behaviour changes only in step 3, each with a test that failed first.
 5. **Stay in scope.** Touch only files inside the scope. Neighbouring code that looks sloppy goes in the report.
-6. **Deletion is complete.** When something is removed, its callers are updated and no shim, re-export, alias, or "deprecated" wrapper is left behind.
+6. **Deletion is complete.** When something is removed, its callers are updated and no shim, re-export, alias, or "deprecated" wrapper is left behind. On a published surface (package exports, an API, CLI flags) "no callers" inside the repo proves nothing about consumers outside it; that removal is reported as a decision, not made.
 7. **Never weaken a check to get green.** A test rewritten to match, a skipped test, a lowered threshold, or a suppression is a red pass.
 
 ## Process
@@ -46,7 +46,7 @@ Skip a pass with zero findings; never reorder.
 |---|---|---|
 | 1 Dead code | remove unused imports, variables, parameters, functions, exports, files; unreachable branches; commented-out code; stubs; compatibility shims; debug prints; scratch files | tooling from step 1, then grep |
 | 2 Comments | remove narration, signature echoes, banners, step numbers, end markers, empty labels, vague TODOs, emoji, conversational voice; keep and sharpen the why | read every comment in scope against the diagnostic in `COMMENTS.md` |
-| 3 Abstractions | inline single-use helpers; remove pass-through wrappers, one-implementation interfaces, factories of one, config for constants, utility dumping grounds | call-site counts (`grep -rn` or the language's find-references) |
+| 3 Abstractions | inline single-use helpers that hide nothing (one that names a calculation stays); remove pass-through wrappers, one-implementation interfaces with no second adapter in sight, factories of one, config for constants, utility dumping grounds | call-site counts (`grep -rn` or the language's find-references) |
 | 4 Defensive paranoia | remove null checks on guaranteed values, try/catch around code that cannot throw, internal-argument validation, masking fallbacks, redundant assertions | read each guard and ask what value could reach it |
 | 5 Duplication | merge duplicate helpers, copy-pasted blocks with cosmetic variation, repeated switches; a copy of a helper that exists elsewhere uses the existing one | grep for the shape; compare bodies |
 | 6 Naming | fix redundant qualifiers, generic names, synonyms for one concept, booleans that are not predicates | read the scope's public surface |

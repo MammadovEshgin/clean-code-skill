@@ -40,14 +40,14 @@ Each entry: **Tell** (what it looks like) and **Fix**.
 - Unreachable branches; conditions the types already rule out. Fix: delete the branch.
 - Commented-out code, "kept for reference". Fix: delete; version control is the reference.
 - Stubs: `throw new Error("not implemented")`, `pass`, `return null // TODO`, placeholder components. Fix: implement or delete.
-- Compatibility shims left behind by a rename or removal: re-exports, `_legacy` aliases, deprecated wrappers, "backwards compatibility" branches nobody asked for. Fix: delete; update the callers.
+- Compatibility shims left behind by a rename or removal: re-exports, `_legacy` aliases, deprecated wrappers, "backwards compatibility" branches nobody asked for. Fix: delete; update the callers. On a published surface (package exports, an API, CLI flags) the callers include consumers outside the repo; that removal is a decision, recorded in the report, not a cleanup.
 - Debug leftovers: `console.log`, `print`, `dbg!`, `fmt.Println`, verbose logger calls added during iteration. Fix: delete; keep only logging that belongs to the design.
 - Temporary scripts and scratch files created during the task. Fix: delete at the end of the task.
 
 ### Abstraction
 - **Single-use helper**: a function with exactly one call site that does not create a meaningful interface. Fix: inline.
 - **Pass-through wrapper**: a function or class that only forwards to another with the same shape. Fix: call the target directly.
-- **One-implementation interface**: an interface, abstract class, or protocol with a single implementer and no second one in sight. Fix: use the concrete type; introduce the seam when the second adapter appears.
+- **One-implementation interface**: an interface, abstract class, or protocol with a single implementer and no second one in sight. Fix: use the concrete type; introduce the seam when the second adapter appears. A test fake that exists, or a vendor boundary the standards name, is a second adapter.
 - **Factory of one**: a factory or builder that always produces the same thing. Fix: construct directly.
 - **Config for constants**: options, flags, or settings that nothing sets. Fix: hardcode the value where it is used; name it if the meaning is unclear.
 - **Premature generality**: parameters, generics, hooks, or plugin points for requirements that do not exist. Fix: delete; write for today's callers.
@@ -86,7 +86,7 @@ Each entry: **Tell** (what it looks like) and **Fix**.
 - Generated boilerplate left unedited (default README text, sample handlers, example tests). Fix: delete or replace with real content.
 
 ### Tests
-- Tests that assert on call counts, private state, or internal collaborators. Fix: assert through the public interface.
+- Tests that assert on call counts, private state, or internal collaborators. Fix: assert through the public interface. (Asserting that an external boundary was called once, when that call is the contract, is not this flag.)
 - Tautological tests whose expected value is computed the same way as the code. Fix: use a known literal or a spec-derived value.
 - Duplicate tests covering the same behaviour with cosmetic input changes. Fix: keep one; add a table-driven case only if the input class differs.
 - Tests of the framework or the language (`expect(true).toBe(true)`, testing that a getter returns what the setter set). Fix: delete.
