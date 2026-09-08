@@ -32,6 +32,11 @@ EOF
 node --test src/zz-check.test.ts >/dev/null 2>&1 || { echo "behaviour check failed (page boundary or parameterization)"; fail=1; }
 rm -f src/zz-check.test.ts
 
+# Red first, mechanically: the suite as it now stands must fail against the pre-fix production code.
+cp src/users.ts src/users.ts.fix && git show HEAD:src/users.ts > src/users.ts
+if node --test "src/**/*.test.ts" >/dev/null 2>&1; then echo "the tests pass on the pre-fix code: the fixes are unproven"; fail=1; fi
+mv -f src/users.ts.fix src/users.ts
+
 tests=$(grep -ch '^test(' src/*.test.ts | awk '{s+=$1} END {print s+0}')
 [ "$tests" -ge 4 ] || { echo "expected at least 4 tests after the audit (2 existing + a regression test per fix), found $tests"; fail=1; }
 grep -Elq 'pageOf' src/*.test.ts || { echo "no test covers pageOf"; fail=1; }

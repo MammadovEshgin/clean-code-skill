@@ -1,0 +1,1 @@
+Clean up src/pricing.ts: remove low-value code without changing behaviour, and keep the tests passing.
