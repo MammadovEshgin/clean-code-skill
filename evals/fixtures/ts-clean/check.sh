@@ -7,7 +7,7 @@ fail=0
 
 node --test "src/**/*.test.ts" >/dev/null 2>&1 || { echo "suite failed"; fail=1; }
 git diff --quiet -- src/money.ts || { echo "production code was changed"; git --no-pager diff -- src/money.ts | head -30; fail=1; }
-[ "$(grep -c '^test(' src/money.test.ts)" -ge 4 ] || { echo "a test was removed"; fail=1; }
+[ "$(grep -c '^test(' src/money.test.ts)" -ge 5 ] || { echo "a test was removed"; fail=1; }
 [ "$(git rev-list --count HEAD)" -eq 1 ] || { echo "something was committed"; fail=1; }
 [ -z "$(git status --porcelain | grep -v 'src/money.test.ts')" ] || { echo "files changed beyond the test file"; git status --short; fail=1; }
 

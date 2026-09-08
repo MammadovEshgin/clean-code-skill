@@ -8,7 +8,9 @@ export function add(a: Money, b: Money): Money {
 }
 
 export function format(money: Money): string {
-  const whole = Math.trunc(money.cents / 100);
-  const fraction = Math.abs(money.cents % 100).toString().padStart(2, "0");
-  return `${whole}.${fraction} ${money.currency}`;
+  const sign = money.cents < 0 ? "-" : "";
+  const magnitude = Math.abs(money.cents);
+  const whole = Math.trunc(magnitude / 100);
+  const fraction = (magnitude % 100).toString().padStart(2, "0");
+  return `${sign}${whole}.${fraction} ${money.currency}`;
 }
