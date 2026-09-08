@@ -20,6 +20,7 @@ extend-select = [
   "T20",      # print statements
   "BLE",      # blind except
   "UP",       # modern syntax
+  "S",        # security: shell=True, eval, weak hashes, hardcoded secrets, unsafe yaml
 ]
 
 [tool.ruff.lint.mccabe]
@@ -31,5 +32,5 @@ max-branches = 10
 max-statements = 50
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR0913", "ARG", "T20"]
+"tests/**" = ["PLR0913", "ARG", "T20", "S101", "S105", "S106"]
 "**/conftest.py" = ["ARG"]

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Audit"
+  short_description: "Find and fix bugs, weaknesses, security flaws, red test first"
+policy:
+  allow_implicit_invocation: false

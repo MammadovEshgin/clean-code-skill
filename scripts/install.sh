@@ -60,9 +60,11 @@ done
 cat <<'EOF'
 
 Done. In your agent:
-  /clean-code-setup        once per repo: lint gates, check command, CODING_STANDARDS.md
-  /finish                  before every commit: interrogate, deslop, gates, fresh-context review, findings applied
-  /deslop <path|repo>      clean existing code, behaviour-preserving; repo = the whole codebase, one commit per slice
+  /clean-code-setup        once per repo: lint gates, check command, CODING_STANDARDS.md, hooks
+  /finish                  before every commit: interrogate, deslop, test audit, audit, gates, fresh-context review
+  /deslop <path|repo>      rewrite existing code to the senior standard, behaviour locked; repo = the whole codebase, one commit per slice
+  /audit <path>            find and fix bugs, weaknesses, security flaws, red test first
+  /test-audit <path>       delete tests that cannot fail, add seam tests, prove the suite with mutation probes
   /interrogate             challenge a finished change on its own
   /clean-code-review main  fresh-context review of the diff since main, on its own
 The clean-code skill itself loads automatically whenever code is written or changed.

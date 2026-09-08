@@ -9,6 +9,7 @@ How to shape modules, files, and projects so that humans and agents can navigate
 - Project layout
 - Dependency direction
 - What not to create
+- Structure problems and safe moves
 - Configuration
 - New project checklist
 - Language notes
@@ -104,6 +105,30 @@ domain (types, rules, pure logic)
 - A `types/` folder holding types away from the code that uses them. Types live with their module; only genuinely shared domain types move to the domain root.
 - Config layers, plugin systems, or dependency-injection containers for a codebase with one configuration.
 - Generated scaffolding kept "just in case": sample handlers, example tests, default README text.
+
+## Structure problems and safe moves
+
+The layout problems `/deslop repo` fixes in its structure phase, and `/clean-code-review` names. Each is a tell, a fix, and the way to make the move without breaking anything.
+
+| Tell | Fix |
+|---|---|
+| Technical-layer top level (`controllers/`, `services/`, `models/`, `repositories/`) with one feature spread across all of them | One folder per domain module; move each feature's pieces together; the layer names become file names inside the module if they are still needed |
+| `utils/`, `helpers/`, `common/`, `shared/`, `misc/` collecting unrelated functions | Move each function beside its only user; functions with two or more users go into the module that owns the concept; the folder ends empty and is deleted |
+| Deep imports past a module's entry point (`../billing/lib/tax`) | Export what outsiders need from the entry point; change the import; enforce with `no-restricted-imports`, `internal/`, `pub(crate)`, or an import linter |
+| Barrel files re-exporting whole subtrees | Replace with curated entry points; delete the barrel once nothing imports it |
+| Import cycles | Move the shared piece downward into the module both depend on, or merge the two; verify with `madge --circular`, `go vet`, `cargo check`, or an import linter |
+| Tests far from the code when the repo convention is colocation (or the reverse) | Follow the convention the repo already has; move, do not mix |
+| A file over 400 lines with more than one responsibility | Split by responsibility, one file per concept, entry point unchanged; a long file with one responsibility stays |
+| A module inside a module | Lift the inner module to a sibling, or fold it into the outer one if it has no callers of its own |
+| A `types/` folder holding types away from their users | Move each type to the module that owns it; only shared domain types stay at the domain root |
+| Composition happening in many places (`new Db()` in every handler) | One composition root; everything else accepts what it needs |
+
+Safe moves:
+
+1. One move per commit, with the check command green after it. A move that breaks the check is reverted, not patched forward.
+2. `git mv` so history follows the file. Update imports with tooling (the language server's rename, `tsc` errors as the worklist, `goimports`, `cargo check`), then run the check command.
+3. A move that changes a path other repositories or deployments depend on (a package entry point, a CLI path, a public module) is a proposal, not a move.
+4. Layout moves conflict with open branches more than any other change. Do them once, at the end of a cleanup, and publish the moved-path map so branches can rebase.
 
 ## Configuration
 

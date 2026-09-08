@@ -9,14 +9,16 @@
     {
       "name": "clean-code",
       "source": "./",
-      "description": "Write without AI slop, finish a change before committing (interrogate, deslop, gates, fresh-context review), deslop a path or the whole repo slice by slice, install lint gates. Every skill ends with a short analytics report.",
+      "description": "Write without AI slop or security holes, finish a change before committing (interrogate, deslop, test audit, audit, gates, fresh-context review), rewrite a path or the whole repo slice by slice, hunt bugs red-test-first, prove tests with mutation probes, install lint gates and hooks. Every skill ends with a short analytics report.",
       "category": "engineering",
       "keywords": [
         "clean-code",
         "code-quality",
         "ai-slop",
         "refactoring",
-        "code-review"
+        "code-review",
+        "security",
+        "testing"
       ]
     }
   ]

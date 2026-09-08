@@ -5,10 +5,12 @@ The catalog used by `/clean-code`, `/deslop`, and `/clean-code-review`. Name the
 ## Contents
 
 - How to apply
-- AI slop tells (comments, dead code, abstraction, defensive code, scope, naming, filler, tests, types)
+- AI slop tells (comments, dead code, abstraction, defensive code, scope, naming, filler, tests, types, instruction files)
 - Ousterhout's design red flags
 - Fowler's smell baseline
 - Complexity signals
+
+Bugs, weaknesses, and security flaws have their own catalog, with the evidence each needs: [BUGS.md](BUGS.md).
 
 ## How to apply
 
@@ -52,6 +54,8 @@ Each entry: **Tell** (what it looks like) and **Fix**.
 - **Utility dumping ground**: `utils/`, `helpers.ts`, `common/`, `misc.py` collecting unrelated functions. Fix: move each function next to its only user, or into the module that owns the concept.
 - **Class for a function**: a class with one method and no state. Fix: a function.
 - **Layer for a layer**: controller → service → repository where the middle only forwards. Fix: apply the deletion test; collapse the pass-through.
+- **Copy of an existing helper**: a `formatDate`, `chunk`, `retry`, or `slugify` written again because the existing one was not found. Fix: use the existing one; if it does not fit, extend it once.
+- **Copy-pasted block**: the same twenty lines in three handlers with a name changed. Fix: reduce to the simplest correct form; one deep function if the shape is truly shared, otherwise three short and honest versions.
 
 ### Defensive code
 - Null or undefined checks on values the type system guarantees. Fix: delete; trust the type.
@@ -77,6 +81,7 @@ Each entry: **Tell** (what it looks like) and **Fix**.
 ### Filler
 - Excessive blank-line groups, decorative alignment, ASCII art in code. Fix: match the file's formatting.
 - Over-typed locals where inference is obvious: `const count: number = 0`. Fix: drop the annotation, unless the codebase annotates everywhere.
+- **Multitasking line**: one line that calls two functions, indexes the result, and branches on it. Fix: one thing per line; an intermediate variable with a precise name is documentation.
 - Template shape: every file follows the same scaffold (header comment, section banners, export block) regardless of content. Fix: shape each file to its content.
 - Generated boilerplate left unedited (default README text, sample handlers, example tests). Fix: delete or replace with real content.
 
@@ -88,6 +93,14 @@ Each entry: **Tell** (what it looks like) and **Fix**.
 - Skipped or commented-out tests without a ticket. Fix: fix or delete.
 - Mocks of the project's own modules. Fix: run them for real; mock only external boundaries.
 - **Module mocking** (`vi.mock("./store")`, `jest.mock`, `monkeypatch` on an own module): the test replaces the seam instead of using it. Fix: inject the dependency through the interface and pass an in-memory adapter.
+- **Artifact asserts itself**: a test reads a file and asserts it contains strings copied from that file. Fix: assert the behaviour the file produces, or delete.
+- **Weakened check**: an expected value edited to match new output, a `skip`, a lowered threshold, a new suppression, in the same change that broke it. Fix: restore the check; fix the code; if the behaviour really changed, say why in the commit.
+- Tests that assert a mock was called, or how many times. Fix: assert the outcome.
+
+### Instruction files
+- **Sediment**: `CLAUDE.md`, `AGENTS.md`, `README.md`, or a memory file carrying implementation details the code already states, observations from one session, or references to files and flags that no longer exist. Fix: delete; keep only what cannot be found by reading the code, and the why.
+- **Rule as prose**: "always run the tests", "never commit secrets" written in an instruction file when a hook, a lint rule, or a test could enforce it. Fix: enforce it mechanically; delete the sentence.
+- **Generic advice**: "write clean code", "follow best practices" in an instruction file. Fix: delete; a line earns its place by naming a specific past mistake.
 
 ### Types and evidence
 - `any`, `as any`, `object`, `dict[str, Any]` where a real shape exists. Fix: name the shape.

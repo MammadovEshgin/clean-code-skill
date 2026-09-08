@@ -26,15 +26,18 @@ Not worth writing:
 
 Pick the level by the seam where the behaviour is observable: unit for pure logic behind a function, integration for a module with a real dependency, end-to-end for a flow across a boundary. A level chosen by habit ("every file gets a unit test") produces shallow tests of shallow modules.
 
-Coverage is a symptom, not a goal. A module with three tests that can fail is better protected than one with thirty that cannot.
+Coverage is a symptom, not a goal. A module with three tests that can fail is better protected than one with thirty that cannot. The measure that matters is the mutation score: break the code on purpose and count the tests that notice (see [Mutation probes](#mutation-probes)).
 
 ## What a good test is
 
 - It verifies behaviour through the public interface. The implementation can change entirely; the test should not.
+- It asserts state and outcomes, never interactions. "The order is confirmed" survives a refactor; "`process` was called with the total" does not.
 - It reads like a specification: `"user can check out with a valid cart"`, `"rejects an expired token"`.
 - Its expected values come from an independent source: a known literal, a worked example, the spec.
 - It exercises one behaviour and makes one logical assertion.
 - It is deterministic: time, randomness, ordering, and network are controlled.
+- It is self-contained: the reader sees the setup, the action, and the expectation without following helpers. Repetition across tests is cheaper than a helper that hides what is being tested.
+- It was seen red once. A test that has never failed has never proven anything.
 
 ```ts
 test("checkout confirms an order for a valid cart", async () => {
@@ -85,6 +88,30 @@ expect(calculateTotal(items)).toBe(expected);
 
 The expected value is computed the way the code computes it, so the test cannot disagree with the code. Fix: `expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15)`.
 
+The same tautology in another costume: a test that reads an artifact and asserts it contains itself.
+
+```php
+test('the layouts opt into dark mode', function () {
+    expect(file_get_contents(resource_path('css/app.css')))
+        ->toContain('@media (prefers-color-scheme: dark)');
+});
+```
+
+It can only fail when someone edits the file it copies. Fix: render the page and assert the behaviour, or delete the test.
+
+**Weakened check**
+
+```diff
+- expect(total).toBe(15);
++ expect(total).toBe(14.99);
+```
+
+```ts
+test.skip("rejects a negative quantity", ...)
+```
+
+A test rewritten to match new behaviour, a skipped test, a lowered coverage threshold, or a new suppression is the cheapest path to green, and the signature failure of agent-written changes. Read test diffs before code diffs. Fix: restore the test; fix the code; if the behaviour really changed, the commit says why.
+
 **Horizontal slicing**: writing all tests first, then all implementation. Bulk tests describe imagined behaviour and go insensitive to real changes. Fix: vertical slices, one test then one implementation, each test a tracer bullet informed by the last.
 
 **Testing the framework or the language**: `expect(true).toBe(true)`, a getter returning what a setter set, a library's own validation. Fix: delete.
@@ -120,8 +147,20 @@ Module mocking (`vi.mock("./user-store")`, `jest.mock`, `monkeypatch.setattr` on
 
 A regression test that never went red proves nothing. If no seam can express the bug, that is a finding about the architecture; report it.
 
+## Mutation probes
+
+The direct test of a test: change the code so it is wrong, run the suite, and see whether anything notices. A mutant nothing kills is either untested behaviour or dead code.
+
+- With a tool: StrykerJS (`npx stryker run`), mutmut (`mutmut run`), pytest-gremlins (`pytest --gremlins`), cargo-mutants (`cargo mutants`), gremlins (`gremlins unleash`). Read the survivors, not the score.
+- By hand, three mutants per module, one at a time: negate one condition; shift one boundary by one; return a constant, an empty collection, or `null`. Copy the file beside itself as `<file>.probe` first, restore it with `mv` after, and confirm `git status` is unchanged.
+- A survivor gets a test named for the behaviour it exposed, and that test is watched killing the mutant before the mutant is reverted.
+- In a finishing pass, probe only the functions the change touched. In a cleanup, probe every module in scope.
+
+`/test-audit` runs this procedure and reports `probes killed k/m`.
+
 ## What to run, and when
 
+- Find the real commands first: `package.json` scripts, the `Makefile`, the CI workflow. Never assume `npm test`.
 - Typecheck after each batch of edits.
 - The focused test file while iterating.
 - Lint and the full suite once at the end.

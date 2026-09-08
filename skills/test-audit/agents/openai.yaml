@@ -1,0 +1,5 @@
+interface:
+  display_name: "Test Audit"
+  short_description: "Delete tests that cannot fail, add seam tests, prove with probes"
+policy:
+  allow_implicit_invocation: false

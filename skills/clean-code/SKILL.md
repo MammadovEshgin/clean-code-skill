@@ -1,26 +1,27 @@
 ---
 name: clean-code
-description: Senior-engineer discipline for writing and changing code without AI slop. Use when writing, editing, refactoring, or structuring code in any language, and when the user mentions clean code, slop, over-engineering, tech debt, dead code, simplifying, or project structure.
+description: Senior-engineer discipline for writing and changing code without AI slop. Use when writing, editing, refactoring, or structuring code in any language, and when the user mentions clean code, slop, over-engineering, tech debt, dead code, simplifying, security, or project structure.
 ---
 
 # Clean Code
 
-Write code a senior engineer would merge without comment. The enemy is **slop**: code that works, passes a glance, and still degrades the codebase because it carries narration comments, dead branches, one-call helpers, defensive paranoia, and abstractions for futures that never arrive. Slop is complexity added at machine speed.
+Write code a senior engineer would merge without comment. The enemy is **slop**: code that works, passes a glance, and still degrades the codebase because it carries narration comments, dead branches, one-call helpers, defensive paranoia, copy-pasted blocks, abstractions for futures that never arrive, and tests that cannot fail. Slop is complexity added at machine speed.
 
-Two ideas govern everything below.
+Three ideas govern everything below.
 
 - **Every line earns its place.** A line stays when deleting it would lose behaviour or information. Otherwise it goes.
 - **Match the codebase, then these defaults.** Read the surrounding code and mirror its comment density, naming, idiom, and structure. A repo's `CODING_STANDARDS.md` (or `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`) overrides this skill. Where the repo has no convention, the rules here apply.
+- **Evidence over confidence.** The burden of proof is on the author. A change ships with the command that proves it, the test that went red before it, and a plain statement of what was not verified.
 
 ## The loop
 
 Run this for every change, sized to the change. A one-line fix runs it in seconds; a feature runs it deliberately.
 
-1. **Understand.** Read the code to be changed and its callers. Find the existing pattern for this kind of thing and reuse it. Name the **seam** (the interface the change lives behind) and the check that will prove it works. State assumptions. When two readings of the request lead to materially different code, ask before writing.
+1. **Understand.** Read the code to be changed and its callers. Find the existing pattern for this kind of thing and reuse it. Name the **seam** (the interface the change lives behind) and the check that will prove it works. State assumptions. For any library outside the standard library, read the current docs or types before using it; recalled APIs go stale. When two readings of the request lead to materially different code, present them with a recommendation and ask.
    Done when one sentence says what changes, where it lives, and how it is verified.
-2. **Shape.** Choose the smallest change that fully solves the request. Put new behaviour behind the smallest interface that hides it. For a non-trivial interface, sketch a second, radically different shape before committing to the first.
+2. **Shape.** Choose the smallest change that fully solves the request. Put new behaviour behind the smallest interface that hides it. For a non-trivial interface, sketch a second, radically different shape before committing to the first. Write the naive, obviously correct version first; optimize only against a measurement.
 3. **Write.** Apply the rules below.
-4. **Verify.** Run the check: typecheck, focused tests, lint, then the full suite once at the end. Read the output. "Tests pass" means they ran in this session with zero failures.
+4. **Verify.** Run the check: typecheck, focused tests, lint, then the full suite once at the end. Close the loop with real execution where it applies: run the program, the request, the browser. Read the output. "Tests pass" means they ran in this session with zero failures.
 5. **Interrogate.** Before calling it done, challenge what was built from first principles: what is unnecessary, over-complicated, or resting on a weak assumption? What can be deleted entirely? What simplifies once the deleted pieces are gone? Prefer **deleting over simplifying, simplifying over optimizing, optimizing over automating**. Make the cuts. If it is already right, leave it alone.
 6. **Report.** End with the block in [Report](#report).
 
@@ -30,23 +31,27 @@ A change that fails one of these is not done.
 
 | Gate | Standard |
 |---|---|
-| **Surgical** | Every changed line traces to the request. Adjacent code, comments, and formatting stay as they were. Orphans created by the change (imports, variables, functions, files) are removed. Pre-existing dead code is reported, not touched. |
+| **Surgical** | Every changed line traces to the request. Adjacent code, comments, and formatting stay as they were; a comment that is not understood is left alone, never "cleaned up". Orphans created by the change (imports, variables, functions, files) are removed. Pre-existing dead code is reported, not touched. |
 | **Zero dead code** | No unused imports, variables, parameters, functions, exports, or files. No unreachable branches. No commented-out code. No stubs, placeholders, or scaffolding for later. Removal is complete: no compatibility shims, re-exports, or `_legacy` aliases unless asked. |
 | **Comments carry information** | A comment stays only when it says something the code cannot: why, an invariant, a constraint, a non-obvious consequence, a link to the decision. Narration, restatement, banners, step numbers, and end-of-block markers go. |
-| **Structure follows need** | Nothing exists for a caller that does not yet exist: no helper with one call site, no wrapper that only forwards, no interface with one implementation, no option nobody sets, no configuration for what does not vary. |
+| **Structure follows need** | Nothing exists for a caller that does not yet exist: no helper with one call site, no wrapper that only forwards, no interface with one implementation, no option nobody sets, no configuration for what does not vary. No copy of a helper that already exists elsewhere. |
 | **Boundaries validate, internals trust** | Validate at the system edge (user input, network, files, external APIs). Inside, trust the types and invariants. Errors surface; a `catch` that swallows, a fallback that hides a failure, or a null check on a guaranteed value is a bug. |
-| **Tests earn their place** | Every test protects a behaviour a caller depends on, at the public seam, and would fail on a plausible bug. Tests of trivial code, framework behaviour, private internals, and duplicates of existing coverage are not written, and are deleted when found. Fewer tests that can fail beat many that cannot. |
-| **Evidence before done** | The verification command ran in this session, its output was read, and it passed. A claim without a fresh run is a guess. |
+| **Safe by default** | Untrusted input is parsed once at the boundary. Queries are parameterized; shell, path, URL, and HTML sinks never receive raw strings. Authorization is checked at every entry point, for the object, not only the session. Secrets come from configuration. Every external call has a timeout and a bounded retry. A multi-step write is atomic or idempotent. Logs carry no secrets or personal data. Failure closes, never opens. The catalog is [BUGS.md](BUGS.md). |
+| **Tests can fail** | Every test protects a behaviour a caller depends on, at the public seam, asserts an outcome rather than an interaction, and was seen red once. Tests of trivial code, framework behaviour, private internals, and duplicates of existing coverage are not written, and are deleted when found. Fewer tests that can fail beat many that cannot. |
+| **Evidence before done** | The verification command ran in this session, its output was read, and it passed. A claim without a fresh run is a guess. Green was never reached by weakening the check: a test rewritten to match new behaviour, a skipped test, a lowered threshold, a suppression, or a stub is a finding, not a fix. |
 
 ## Writing rules
 
 ### Simplicity
 - Write the minimum code that solves the problem. If 200 lines could be 50, rewrite.
+- One thing per line. An intermediate variable with a precise name beats a call chained into an index into a ternary.
+- Three similar lines beat a premature abstraction. Copy-pasted blocks with cosmetic variation are worse than both: reduce to the simplest correct form.
 - Inline the abstraction that has one user. Extract on the third caller, or when the extraction creates a real interface (see Structure).
 - Prefer a plain function to a class, a value to a flag, a lookup table to a recurring switch, a guard clause to nesting.
 - Keep the happy path at the top level and unindented; handle the special case early and return.
 - Design special cases out of existence: model "no selection" as an empty range rather than an `if (hasSelection)` at every use.
-- Inside the lines being touched, leave the design as it would be if the change had been known from the start. Outside them, report what was seen and leave it.
+- Inside the lines being touched, leave the design as it would be if the change had been known from the start. When the code being changed is the wrong shape and a clearly better shape exists (a smaller interface, a special case gone, one piece of knowledge in one place) and the seam tests pass unchanged, write the better shape. Outside the lines being touched, report what was seen and leave it.
+- A refactor that moves code without reducing what a reader must hold in their head is not an improvement.
 
 ### Structure: deep modules
 - A **module** (function, class, package, service) is deep when a lot of behaviour sits behind a small interface. Aim for that shape at every scale.
@@ -57,7 +62,18 @@ A change that fails one of these is not done.
 - Keep each piece of knowledge in one place. When a format, rule, or mapping shows up in two modules, merge them or move the knowledge behind one simple interface.
 - Files mirror the module map: a module gets a folder, its public surface at the root, implementation and tests in subfolders. Outsiders import entry points only.
 - Length is not a reason to split. A 150-line function with one job and a simple signature is deep; six 25-line functions that only make sense together are shallow.
-- Layout, dependency direction, and language shape: [STRUCTURE.md](STRUCTURE.md).
+- Layout, dependency direction, structure problems and their fixes, and language shape: [STRUCTURE.md](STRUCTURE.md).
+
+### Design for the day it goes wrong
+- Accept dependencies as parameters; do not construct them inside. Return results; do not mutate inputs or reach out for side effects the caller cannot see.
+- Make the operation total where the domain allows it, and make illegal states unrepresentable where it does not.
+- Keep pure logic separate from effects: a core that computes, an edge that reads and writes.
+- Every call across a process boundary has a timeout, a bounded retry with backoff, and an idempotent target when it can be retried.
+- A write that must succeed with another write runs in one transaction, or is designed so a retry converges.
+- Every resource has one owner and a close on the error path (`using`, `with`, `defer`, `try/finally`).
+- A check followed by an act on shared state is a race until it is atomic: a constraint, an upsert, a compare-and-set.
+- Bound the work to the input: paginate, stream, batch. A query inside a loop is a finding.
+- The failure catalog, with the evidence each entry needs: [BUGS.md](BUGS.md).
 
 ### Naming
 - Names are precise (the name alone says what it holds) and consistent (one term per concept, never reused for another).
@@ -70,7 +86,8 @@ A change that fails one of these is not done.
 ### Errors
 - First, define the error out of existence by making the operation total: `delete` ensures absence, `substring` clamps.
 - Handle each error once, at the level that can act on it. Let it propagate through levels that cannot.
-- Fail loudly on the impossible. Messages name what failed, what was expected, and the values involved.
+- Fail loudly on the impossible, and fail closed on the sensitive: an authorization check that errors denies.
+- Messages name what failed, what was expected, and the values involved.
 - Use the language's idiom for propagation (typed results, `%w` wrapping, `?`, specific exception classes) as the codebase already does.
 - Hierarchy and per-language idiom: [ERRORS.md](ERRORS.md).
 
@@ -80,16 +97,18 @@ A change that fails one of these is not done.
 - Diagnostic: could a reader who has never seen this code write this comment from the code alone? If yes, delete it.
 - Docstrings state the contract for callers (what, preconditions, errors), never the implementation. Skip docstrings that restate the signature.
 - `TODO` carries an owner or ticket and a concrete task.
+- The why that does not fit a comment goes in the commit body: what was decided, what was ruled out. Agents start every session cold; unwritten intent is paid for again each time.
 - Keep and delete lists with examples: [COMMENTS.md](COMMENTS.md).
 
 ### Tests
 - Write a test when a plausible bug would make it fail and a caller would care. Trivial code, getters, framework behaviour, and private helpers get none. Pick the level (unit, integration, end-to-end, contract, property) by the seam where the behaviour is observable, not by habit.
-- Test behaviour through the public interface. A test that must reach past the interface means the module is the wrong shape.
-- Expected values come from an independent source (a known literal, the spec), never recomputed the way the code computes them.
+- Test behaviour through the public interface, asserting state and outcomes, never interactions. A test that must reach past the interface means the module is the wrong shape.
+- Expected values come from an independent source (a known literal, the spec), never recomputed the way the code computes them, and never by reading the artifact and asserting it contains itself.
 - Mock only at system boundaries the project does not own. Own modules run for real. Module mocking (`vi.mock`, `jest.mock`, patching an own module) replaces a real seam with a fake one; inject the dependency and use a real or in-memory adapter instead.
-- One behaviour per test, named as the capability ("rejects expired token"), not the mechanism.
-- Red before green when fixing a bug: the test fails first, then the fix makes it pass.
-- Tests that duplicate coverage or exercise the framework are dead code with a runtime cost. Delete them.
+- One behaviour per test, named as the capability ("rejects expired token"), not the mechanism. Self-contained over shared setup.
+- Red before green: for new behaviour, the test fails without the change; for a bug, it reproduces the bug before the fix.
+- A test changed to match new behaviour carries the reason in the commit. A test deleted names the coverage that remains.
+- Find the repo's real test command (`package.json`, `Makefile`, CI) instead of assuming one.
 - Good, bad, and mocking policy: [TESTS.md](TESTS.md).
 
 ### Types and evidence
@@ -98,6 +117,11 @@ A change that fails one of these is not done.
 - Make illegal states unrepresentable: discriminated unions over boolean pairs, enums over strings, distinct ID types where mix-ups are plausible.
 - Suppressions (`@ts-ignore`, `# type: ignore`, `#[allow]`) appear only with a one-line reason. A type that is hard to name signals an unclear design.
 - Annotate public signatures and exported values; let inference carry the rest.
+
+### Instruction files
+- A markdown file an agent maintains fills, over time, with implementation details, session-specific observations, and stale docs. Write into `CLAUDE.md`, `AGENTS.md`, `README.md`, or a memory file only what cannot be found by reading the code or the config, and delete what has gone stale in the same edit.
+- A rule that must always hold belongs in a test, a lint rule, or a hook, not in prose.
+- When the user corrects a pattern, offer one dated line for `CODING_STANDARDS.md`. The review reads it on every run and enforces it; every mistake happens once.
 
 ## Complexity budget
 
@@ -121,12 +145,13 @@ Copy and check every box before reporting completion.
 - [ ] Every changed line traces to the request; nothing adjacent was "improved"
 - [ ] No dead code, stubs, commented-out code, or compatibility shims
 - [ ] Every remaining comment says something the code cannot
-- [ ] No abstraction with a single user; no option nobody sets
-- [ ] Validation at boundaries only; errors surface; no masking fallbacks
+- [ ] No abstraction with a single user; no option nobody sets; no duplicate of an existing helper
+- [ ] Validation at boundaries only; errors surface; no masking fallbacks; failure closes
+- [ ] Sinks are safe: parameterized queries, no raw strings into shell, path, URL, or HTML; authorization per entry point; bounded external calls
 - [ ] Names precise and consistent with the codebase
 - [ ] Complexity gates pass (or none exist yet)
-- [ ] Every new test can fail on a plausible bug; no test of trivial code, framework, or internals
-- [ ] Typecheck, lint, focused tests, full suite: run this session, output read, passing
+- [ ] Every new test asserts an outcome at a seam and was seen red; no test of trivial code, framework, or internals
+- [ ] Typecheck, lint, focused tests, full suite: run this session, output read, passing, nothing weakened to get there
 - [ ] Interrogated: nothing left to delete or simplify
 ```
 
@@ -141,6 +166,7 @@ Diff        +<added> / -<removed> lines · net <±n>
 Removed     dead code <n> · comments <n> · debug statements <n> · abstractions <n>
 Gates       typecheck <pass|fail|n/a> · lint <pass|fail|n/a> · tests <passed>/<total>
 Complexity  max <n> · over budget <n> · erosion <x%>   (or n/a)
+Unverified  <what could not be run, and why, or "nothing">
 Left        <things noticed outside scope, or "nothing">
 Verdict     <ready | needs decision: ...>
 ```
@@ -152,9 +178,10 @@ Report only what happened. A gate that did not run says `n/a`, never `pass`.
 Load only what the task needs; every link is one level deep.
 
 - [RED-FLAGS.md](RED-FLAGS.md): the catalog. AI slop tells, Ousterhout's design red flags, Fowler's smells, each with its fix. Name the flag when reviewing.
+- [BUGS.md](BUGS.md): correctness, robustness, and security tells, the evidence each needs, the fix, the confidence rubric.
 - [COMMENTS.md](COMMENTS.md): comments to keep and delete, with examples.
-- [STRUCTURE.md](STRUCTURE.md): project layout, module shape, dependency direction, language notes.
+- [STRUCTURE.md](STRUCTURE.md): project layout, module shape, dependency direction, structure problems and safe moves, language notes.
 - [ERRORS.md](ERRORS.md): the four-tool hierarchy and per-language idiom.
-- [TESTS.md](TESTS.md): good tests, bad tests, mocking policy.
+- [TESTS.md](TESTS.md): good tests, bad tests, mocking policy, mutation probes.
 
-Companion skills: `/finish` takes a change from "it works" to ready-to-commit (interrogate, deslop, gates, fresh-context review, findings applied); `/deslop` cleans existing code in behaviour-preserving passes, and `/deslop repo` cleans the whole codebase slice by slice with one commit per slice; `/interrogate` and `/clean-code-review` run those pieces on their own; `/clean-code-setup` installs the lint gates and `CODING_STANDARDS.md`.
+Companion skills: `/finish` takes a change from "it works" to ready-to-commit (interrogate, deslop, test audit, audit, gates, fresh-context review, findings applied); `/deslop` rewrites existing code into the shape a senior engineer would have written, behaviour locked, and `/deslop repo` does it for the whole codebase slice by slice with one commit per slice; `/audit` hunts bugs, weaknesses, and security flaws and fixes them red-test-first; `/test-audit` deletes tests that cannot fail, adds the ones that matter, and proves the suite with mutation probes; `/interrogate` and `/clean-code-review` run those pieces on their own; `/clean-code-setup` installs the lint gates, the hooks, and `CODING_STANDARDS.md`.

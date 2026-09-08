@@ -4,7 +4,8 @@
 #   - description is non-empty and <= 1024 chars
 #   - SKILL.md body is <= 500 lines
 #   - relative links in every skill markdown file resolve
-#   - no em dashes anywhere in skills/ (an AI-writing tell this repo bans in its own text)
+#   - no em dashes in skills/, docs/, evals/, README, CHANGELOG (an AI-writing tell this repo bans in its own text)
+#   - shell scripts parse; JSON templates and manifests parse; plugin.json lists every skill
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -38,9 +39,29 @@ while IFS= read -r -d '' md; do
   done < <(grep -oE '\]\(([^)#]+)(#[^)]*)?\)' "$md" | sed -E 's/^\]\((.*)\)$/\1/; s/#.*$//' || true)
 done < <(find "$REPO/skills" -name '*.md' -print0)
 
-if grep -rl $'\xe2\x80\x94' "$REPO/skills" "$REPO/README.md" 2>/dev/null; then
+if grep -rl $'\xe2\x80\x94' "$REPO/skills" "$REPO/README.md" "$REPO/docs" "$REPO/evals" "$REPO/CHANGELOG.md" 2>/dev/null; then
   problem "em dash found in the files above"
 fi
+
+for sh in "$REPO"/skills/*/templates/*.sh "$REPO"/skills/*/scripts/*.sh "$REPO"/scripts/*.sh "$REPO"/evals/run.sh "$REPO"/evals/fixtures/*/check.sh; do
+  [ -f "$sh" ] || continue
+  bash -n "$sh" || problem "$sh: shell syntax"
+done
+
+for js in "$REPO"/skills/*/templates/*.json "$REPO"/.claude-plugin/*.json; do
+  [ -f "$js" ] || continue
+  if command -v python >/dev/null 2>&1; then
+    python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$js" 2>/dev/null || problem "$js: invalid JSON"
+  elif command -v node >/dev/null 2>&1; then
+    node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$js" 2>/dev/null || problem "$js: invalid JSON"
+  fi
+done
+
+manifest_skills="$(python -c "import json; print(' '.join(json.load(open('$REPO/.claude-plugin/plugin.json', encoding='utf-8'))['skills']))" 2>/dev/null || true)"
+for skill_md in "$REPO"/skills/*/SKILL.md; do
+  dir="$(basename "$(dirname "$skill_md")")"
+  case " $manifest_skills " in *"./skills/$dir "*) ;; *) [ -n "$manifest_skills" ] && problem "plugin.json does not list ./skills/$dir" ;; esac
+done
 
 if [ "$fail" -ne 0 ]; then
   echo "check: failures"; exit 1

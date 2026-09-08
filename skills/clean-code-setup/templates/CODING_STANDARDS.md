@@ -6,16 +6,24 @@ Rules for this repo that differ from the `clean-code` skill's defaults, plus rul
 
 - Language and runtime:
 - Formatter: (runs automatically; never hand-format)
-- Linter: (complexity 10, depth 3, params 4; see the config)
+- Linter: (complexity 10, depth 3, params 4, security rules; see the config)
 - Typecheck:
 - Tests:
 - Check everything: `<check command>` (run before calling any change done)
+- Fast gates: `<fast check command>` (lint and typecheck; the stop hook runs this)
 
 ## Conventions that differ from the skill
 
 <!-- Only genuine differences. Examples: -->
 - Comments: exported API gets a one-line doc comment; internal code has none unless something is non-obvious.
 - Errors: HTTP handlers return a typed error response; nothing throws across the handler boundary.
+
+## Boundaries
+
+<!-- Where untrusted input enters, and the one way each sink is reached. Examples: -->
+- Database: through `db.query(sql, params)` only; no string-built SQL.
+- Authorization: `requireOwner(resource)` in every handler that takes an id.
+- Secrets: `config.ts` at startup; nothing reads `process.env` elsewhere.
 
 ## Layout
 
@@ -29,4 +37,5 @@ Rules for this repo that differ from the `clean-code` skill's defaults, plus rul
 ## Rules from mistakes
 
 <!-- Each line exists because an agent or a human did the opposite once. Date it. Delete it when a linter enforces it. -->
-- 2026-09-07: Import module entry points directly; no barrel `index.ts` re-exporting subtrees.
+- 2026-09-08: Import module entry points directly; no barrel `index.ts` re-exporting subtrees.
+- 2026-09-08: Tautological tests considered harmful.
