@@ -49,7 +49,7 @@ Everything else is a piece of one of those.
    expose it through POST /orders. Tests at the HTTP seam. Run npm run check when done.
    ```
 
-   While the agent works, the edit hook formats and lints each file it touches and hands findings straight back. When the agent tries to stop with the fast gates red, the stop hook keeps it working.
+   While the agent works, the edit hook formats and lints each file it touches and hands findings straight back. When the agent tries to stop with the fast gates red, the stop hook keeps it working, up to three times; after that it lets the agent stop and tells you, because a gate that stays red is usually outside the change. The hooks see only the agent's own edits and commits; CI is the merge gate.
 
 4. Read the Clean Code Report at the end. If `Left` names something you care about, make it the next task. If `Unverified` names something, decide whether it needs a run before you commit.
 5. Before the first commit:
@@ -137,16 +137,16 @@ On the `deslop/<date>` branch, the review reads the whole cleanup as one diff, t
 ## Daily flow
 
 ```
-<describe the change>       clean-code fires automatically; hooks lint each edit and gate the stop
+<describe the change>       clean-code loads on a matching task; hooks lint each edit and gate the stop
 /finish                     interrogate, deslop, test audit, audit, gates, fresh-context review, findings applied
 git commit                  or: /finish --commit   (the commit gate runs the check either way)
 ```
 
-`/finish` ends with a Finish Report:
+`/finish` picks a level from the change: `fast` for one module under about 40 lines with no risk marker (interrogate, mechanical passes, fast gates, inline review), `standard` for the rest, `deep` when the diff touches auth, persistence, concurrency, external side effects, public contracts, migrations, or many files (mutation tool where installed, callers two levels out, a second fresh review). `--fast`, `--standard`, `--deep` override. It ends with a Finish Report:
 
 ```
 ## Finish Report
-Purpose     Retry webhook delivery with exponential backoff
+Purpose     Retry webhook delivery with exponential backoff · level deep (external side effects)
 Scope       working tree · 3 files
 Interrogate deleted 2 · simplified 1
 Deslop      dead code 4 · comments 11 · abstractions 1 · defensive 2 · duplication 0 · naming 1 · filler 0 · hotspots 0 · design 1 · docs 0
@@ -256,11 +256,12 @@ Quality prompts improve the first version and then lose ground with every iterat
 ```bash
 evals/run.sh                    # runs each fixture's command in a fresh session and checks the result
 evals/run.sh ts-audit           # one fixture: /audit over an injection and an off-by-one
-evals/run.sh ts-test-audit      # one fixture: /test-audit over four trash tests; the check applies mutants
-evals/run.sh --keep             # keep the workspaces; agent-output.txt lands beside each in <workspace>.meta/
+evals/run.sh --baseline ts-audit  # the same fixture, no skills, a plain-English prompt
+evals/run.sh --runs 3 ts-clean  # repeat, to see variability
+evals/run.sh --keep ts-test-audit # keep the workspace; agent-output.txt lands in <workspace>.meta/
 ```
 
-Add a fixture from your own codebase (`evals/fixtures/<name>/` with a `check.sh`, a behaviour test, and either an `entry` for `/deslop <entry>` or a `command` with the full invocation) to measure against the slop you actually see.
+Every run appends tokens, cost, turns, time, and the Claude Code version to `evals/results/log.tsv`. Add a fixture from your own codebase (`evals/fixtures/<name>/` with a `check.sh`, a behaviour test, a `baseline` prompt, and either an `entry` for `/deslop <entry>` or a `command` with the full invocation) to measure against the slop you actually see.
 
 ### Writer and reviewer in two sessions
 
@@ -300,9 +301,9 @@ in a checkout of this repo, then `scripts/check.sh`. Delete whatever the new mod
 
 **Plugin commands have a prefix.** Plugin installs namespace skills: `/clean-code:finish`, `/clean-code:deslop`, `/clean-code:audit`, `/clean-code:test-audit`, `/clean-code:interrogate`, `/clean-code:clean-code-review`, `/clean-code:clean-code-setup`. skills.sh and script installs use the bare names.
 
-**The stop hook keeps the agent working on something that was already red.** The fast gates were red before the agent touched the tree, usually a pre-existing lint failure. Fix it or raise the ratchet; the hook compares against zero, not against a baseline. To pause the hooks, remove their entries from `.claude/settings.json`; to never install them, `/clean-code-setup --no-hooks`.
+**The stop hook keeps the agent working on something that was already red.** The fast gates were red before the agent touched the tree, usually a pre-existing lint failure. The hook blocks at most three stops per session and then lets the agent stop with a message. Fix the cause or raise the ratchet; the hook compares against zero, not against a baseline. To pause the hooks, remove their entries from `.claude/settings.json`; to never install them, `/clean-code-setup --no-hooks`.
 
-**The commit gate blocks a commit I want.** The check command is red. The hook prints the failures; fix them. It cannot be bypassed from inside the agent, which is the point. From your own shell, `git commit` is not affected.
+**The commit gate blocks a commit I want.** The check command is red. The hook prints the failures; fix them. It catches every spelling of `git commit` the agent can run through its Bash tool (`scripts/test-hooks.sh` lists them). From your own shell, `git commit` is not affected, and neither is CI; make CI the gate that matters.
 
 **`/deslop repo` refuses to start.** The working tree is not clean. Commit or stash, then run it again. It also stops before the first slice when no check command can be found and no tests exist; run `/clean-code-setup` first.
 

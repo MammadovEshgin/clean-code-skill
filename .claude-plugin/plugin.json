@@ -1,6 +1,6 @@
 {
   "name": "clean-code",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Senior-engineer discipline for coding agents: write without AI slop and without security holes, rewrite existing code into the shape a senior would have written (one path, or the whole repo slice by slice with a commit per slice), hunt and fix bugs red-test-first, make tests able to fail, finish a change before committing (interrogate, deslop, test audit, audit, gates, fresh-context review), and install lint gates plus hooks that make it automatic. Every skill ends with a short analytics report.",
   "author": {
     "name": "Eshgin Mammadov",

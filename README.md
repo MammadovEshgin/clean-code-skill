@@ -12,7 +12,7 @@
   <a href="https://agentskills.io"><img alt="agent skills" src="https://img.shields.io/badge/Agent%20Skills-compatible-6f42c1"></a>
 </p>
 
-Eight small, composable [Agent Skills](https://agentskills.io) for Claude Code, Codex, Cursor, and any other skills-aware agent. One loads itself whenever code is written. Two you type routinely: `/finish` before every commit, `/deslop repo` once on a codebase you inherited. Three hooks make the gates run without anyone typing anything. Every run ends with a short, diff-backed report.
+A configurable toolkit for improving and verifying agent-written code: eight small, composable [Agent Skills](https://agentskills.io) for Claude Code, Codex, Cursor, and any other skills-aware agent. One is model-invoked, so the host loads it when a coding task matches its description (type `/clean-code` to force it). Two you type routinely: `/finish` before every commit, `/deslop repo` once on a codebase you inherited. Three hooks run the gates on the agent's own edits and commits without anyone typing anything. Every run ends with a short, diff-backed report. What is implemented, what is tested, and what is only intended: [Status](#status).
 
 They are built from the best public thinking on agent-written code (Matt Pocock's skills, Addy Osmani's writing on agentic engineering, Andrej Karpathy's notes from a year of agent coding, John Ousterhout's *A Philosophy of Software Design*, Anthropic's and OpenAI's 2026 guidance, OWASP 2025) and compressed to what still changes a strong model's behaviour. See [Credits](#credits).
 
@@ -26,9 +26,9 @@ They are built from the best public thinking on agent-written code (Matt Pocock'
 
 2. Select all eight skills and the agents you use.
 
-3. In your agent, run `/clean-code-setup` once. It wires complexity, dead-code, and security lint gates into your repo, adds one `check` command, creates `CODING_STANDARDS.md`, installs three hooks (lint on every edit, fast gates before the agent stops, the full check before any commit), and proves each gate fails on a violation before passing again.
+3. In your agent, run `/clean-code-setup` once. It wires complexity, dead-code, and security lint gates into your repo, adds one `check` command, creates `CODING_STANDARDS.md`, installs three hooks (lint on every edit, fast gates before the agent stops, the full check before any commit the agent makes), and proves each gate fails on a violation before passing again.
 
-4. Done. `clean-code` now fires on its own whenever code is written or changed. Type `/finish` before each commit. On a codebase that already has slop, type `/deslop repo` once and let it work through the modules: one cleanup commit and one fix commit per module.
+4. Done. `clean-code` loads when the host matches a coding task to it. Type `/finish` before each commit; it sizes itself to the change. On a codebase that already has slop, type `/deslop repo` once and let it work through the modules: one cleanup commit and one fix commit per module. Keep CI as the merge gate; the hooks are feedback for the agent, not a substitute.
 
 ## Install as a Claude Code plugin
 
@@ -168,7 +168,7 @@ Verdict     behaviour preserved · no passes reverted
 ```
 
 > [!TIP]
-> When the agent does something you dislike, write one line in `CODING_STANDARDS.md`. The review and the writing skill read it on every run, and it overrides their defaults. Date the line; delete it when a linter enforces it. Every mistake happens once. (The pattern is Matt Pocock's: notice, write it down, let review enforce it. His demonstration was one command: `echo "Tautological tests considered harmful." >> CODING_STANDARDS.md`.)
+> When the agent does something you dislike, write one line in `CODING_STANDARDS.md`. The review and the writing skill read it on every run, and it overrides their defaults. Date the line; delete it when a linter enforces it. A mistake written down is one the review can catch next time; a linter or a hook is what makes it impossible. (The pattern is Matt Pocock's: notice, write it down, let review enforce it. His demonstration was one command: `echo "Tautological tests considered harmful." >> CODING_STANDARDS.md`.)
 
 ### #5: Prose Asks, Linters Insist
 
@@ -182,11 +182,11 @@ Verdict     behaviour preserved · no passes reverted
 
 | Hook | When | Does |
 |---|---|---|
-| `format-and-lint.sh` | after every edit | formats the file and lints it; findings go straight back to the agent |
-| `check-on-stop.sh` | before the agent stops | runs the fast gates when files were edited; red keeps the agent working |
-| `commit-gate.sh` | before any `git commit` | runs the full check; red blocks the commit |
+| `format-and-lint.sh` | after every edit the agent makes | formats the file and lints it; findings go straight back to the agent |
+| `check-on-stop.sh` | before the agent stops | runs the fast gates when files were edited; red keeps the agent working, at most three times, then it stops with a message |
+| `commit-gate.sh` | before any `git commit` the agent runs | runs the full check, in the repo `-C` names if given; red blocks the commit |
 
-Then it proves each gate bites by adding a violation, watching the check fail with the rule named, watching the commit gate block a fake commit, and watching it all pass again. On a codebase that already exceeds the thresholds, it sets the ceiling just above the current maximum so nothing is grandfathered, and ratchets it down as hotspots fall.
+The hooks see the agent's own edits and commits through Claude Code's tools. They do not see commits from your shell or from CI, so CI stays the merge gate; the [PR gate recipe](./docs/USAGE.md#pull-request-gate) shows the two lines. Every spelling of `git commit` the gate is expected to catch (leading spaces, `--no-pager`, `-c` values, chains, multi-line commands, `sh -c '...'`) is in `scripts/test-hooks.sh`, which `scripts/check.sh` runs. Setup then proves each gate bites by adding a violation, watching the check fail with the rule named, watching the commit gate block a fake commit, and watching it all pass again. On a codebase that already exceeds the thresholds, it sets the ceiling just above the current maximum so nothing is grandfathered, and ratchets it down as hotspots fall.
 
 ### #6: Tests That Cannot Fail
 
@@ -226,11 +226,20 @@ Then it proves each gate bites by adding a violation, watching the check fail wi
 
 **The Problem**: interrogate, deslop, audit the tests, audit the code, run the check, review in a fresh context, apply the findings, run the check, review again. Nine steps before every commit is a workflow nobody keeps by hand, so the steps that matter get skipped on the day they matter.
 
-**The Fix** is [`/finish`](./skills/finish/SKILL.md), one command between "it works" and `git commit`. It interrogates the diff first (a deleted function needs no cleaning), deslops what remains, makes the change's tests able to fail, hunts for bugs in the change and fixes them red-first, runs the check, hands the diff to a fresh-context reviewer, applies the findings (correctness findings are reproduced before they are fixed; weakened checks are restored), runs the check again, and reviews once more when anything changed. It leaves the working tree ready and prints one report with a suggested commit message and a line for what could not be verified; `--commit` commits when the verdict is ready. A `rethink` verdict stops it, because that is a decision, not a cleanup.
+**The Fix** is [`/finish`](./skills/finish/SKILL.md), one command between "it works" and `git commit`. It writes one change record (purpose, target, checks, standards, baseline, risk markers) and hands it to every step, so nothing is rediscovered. Then it interrogates the diff (a deleted function needs no cleaning), deslops what remains, makes the change's tests able to fail, hunts for bugs in the change and fixes them red-first, runs the check, hands the diff to a fresh-context reviewer, applies the findings (correctness findings are reproduced before they are fixed; weakened checks are restored), runs the check again, and reviews once more when anything changed. It leaves the working tree ready and prints one report with a suggested commit message and a line for what could not be verified; `--commit` commits when the verdict is ready. A `rethink` verdict stops it, because that is a decision, not a cleanup.
+
+It sizes itself to the change. A rename does not get the process a payment path gets:
+
+| Level | When | Work |
+|---|---|---|
+| `fast` | one module, under about 40 changed lines, no risk marker | interrogate, the mechanical passes on the hunks, fast gates, inline review |
+| `standard` | everything else | all passes, test audit with a few probes, audit of the diff, full check, fresh-context review |
+| `deep` | any risk marker: auth, persistence, concurrency, external side effects, public contracts, migrations, many files | mutation tool where installed, callers two levels out, a second fresh review |
 
 ```
-/finish                     # the uncommitted diff
+/finish                     # the uncommitted diff, level chosen from the change
 /finish main                # the branch since main
+/finish main --deep         # force the level
 /finish main --commit       # and commit when ready
 ```
 
@@ -261,7 +270,38 @@ A gate that did not run says `n/a`, never `pass`. `Unverified` says what could n
 
 ### Measured, not asserted
 
-`evals/run.sh` runs the skills on fixtures with planted problems in a fresh Claude Code session and checks the result mechanically: behaviour test still passes, every planted pattern gone, file under a line ceiling, one commit per slice for `/deslop repo`, a red-first test per fix for `/audit`, and, for `/test-audit`, the check itself applies three mutants to the production code and fails unless the suite kills all three. Six fixtures today; add one from your own codebase. [docs/COMPARISON.md](./docs/COMPARISON.md) sets this repo against the alternatives people install, layer by layer, including where it is weaker.
+`evals/run.sh` runs the skills on fixtures with planted problems in a fresh Claude Code session and checks the result mechanically: behaviour test still passes, every planted pattern gone, file under a line ceiling, one commit per slice for `/deslop repo`, for `/audit` the check restores the pre-fix code and requires the new tests to fail, for `/test-audit` the check applies three mutants and fails unless the suite kills all three, and for `ts-clean` correct code must come back byte-identical. Every run records tokens, cost, turns, time, and the Claude Code version in `evals/results/log.tsv`; `--baseline` runs the same fixture with no skills and a plain-English prompt, so the comparison is against the same model under the same conditions. Seven fixtures and single runs today: enough to catch regressions and to put a number on cost, not enough to claim the skills beat the bare model until the baseline arm has more rows. [evals/README.md](./evals/README.md) has the results and the limits; [docs/COMPARISON.md](./docs/COMPARISON.md) sets this repo against the alternatives people install, including where it is weaker.
+
+## Status
+
+| | Implemented | Tested | Intended, not yet shown |
+|---|---|---|---|
+| Writing without slop (`clean-code`) | rules, gates, report | fixtures show the cleanup passes remove the planted patterns | that a model with the skill writes less slop than without it over a real feature |
+| `/deslop`, `/deslop repo` | eleven passes, design pass, audit step, slice loop with `slice.sh`, structure phase | `ts-pricing`, `py-orders`, `ts-repo` (1.2.0 pass; 2.0.0 run interrupted by a rate limit after both slices landed); `slice.sh` unit tests | the structure phase on a real layout; a full 2.1.0 repo run |
+| `/audit` | catalog, four facts per finding, red-first fixes | `ts-audit` with a mechanical red-first check; it also found a real bug in `ts-clean` | precision and recall on bugs nobody planted |
+| `/test-audit` | classification, seam tests, mutation probes | `ts-test-audit` with mutants applied by the check | results with a real mutation tool |
+| `/finish` | change record, three levels, fresh review, apply | `ts-finish` at 2.0.0 | the level heuristic on real diffs; token savings measured per level |
+| `/clean-code-review` | four axes, verification step, false-positive list | only through `/finish` | reviewer-effort and false-positive rates |
+| Hooks | three scripts, bounded stop block, `-C` handling | `scripts/test-hooks.sh`, 33 cases, Windows Git Bash | Linux and macOS runs; hosts other than Claude Code (hooks are Claude Code only) |
+| Installers, validator | backup on collision, JSON parser detection | run by hand on Windows | Linux and macOS |
+
+## Token budget
+
+Estimated as characters divided by four, per file, on the day of the 2.1.0 release. Actual billed tokens per run are in `evals/results/log.tsv`.
+
+| Instructions | 2.0.0 | 2.1.0 |
+|---|---:|---:|
+| `clean-code` core | 4,736 | 2,854 |
+| `/deslop` | 2,714 | 2,732 |
+| `/deslop repo` (REPO.md) | 2,624 | 2,952 |
+| `/finish` | 1,487 | 1,816 |
+| `/audit` | 1,383 | 1,558 |
+| `/test-audit` | 1,522 | 1,615 |
+| `/clean-code-review` | 1,465 | 1,598 |
+| `BUGS.md`, `RED-FLAGS.md`, `TESTS.md` (references) | 10,216 | 10,801 |
+| All skills and references | 33,964 | 33,767 |
+
+The core was cut by 40%. The other skills grew with the rule nuance, the change record, and the section maps, so the file total is flat. The saving in 2.1.0 comes from loading less per run: `/finish` discovers once and hands a record to every step, reuses check results until a covered file changes, runs at `fast` for small low-risk changes, and the references open with a section map so a pass or a review loads the sections it needs rather than the file. Whether that lowers billed tokens is a measurement, not a claim; compare the log rows across versions.
 
 ## Built For 2026 Models
 
@@ -311,12 +351,13 @@ Worked examples, recipes (legacy repo in a day, overnight cleanup, PR gate in CI
 
 ## Compatibility
 
-| Host | Install | Notes |
-|---|---|---|
-| Claude Code | skills.sh, plugin, or script | Full support, including the forked review context, the fresh-context workers of `/deslop repo` and `/finish`, and the three hooks. |
-| Codex | skills.sh or `scripts/install.sh --codex` | `agents/openai.yaml` ships with every skill; user-invoked skills are marked implicit-invocation-off. Without subagents, `/deslop repo` runs slices inline and resumes across sessions; `/finish` reviews inline. Hooks are Claude Code only; the gates still run through the `check` command. |
-| Cursor, OpenCode, Gemini CLI, Antigravity, others | skills.sh, or copy `skills/*` into the host's skills directory | Frontmatter fields a host does not know are ignored. Same inline fallback as Codex. |
-| Windows | `scripts/install.ps1` | Skill scripts and hooks run under Git Bash. |
+| Host | Install | Tested | Notes |
+|---|---|---|---|
+| Claude Code | skills.sh, plugin, or script | yes, 2.1.258 on Windows 11 with Git Bash | Full support, including the forked review context, the fresh-context workers of `/deslop repo` and `/finish`, and the three hooks. |
+| Codex | skills.sh or `scripts/install.sh --codex` | no | `agents/openai.yaml` ships with every skill; user-invoked skills are marked implicit-invocation-off. Without subagents, `/deslop repo` runs slices inline and resumes across sessions; `/finish` reviews inline, which is not an independent review. Hooks are Claude Code only; the gates still run through the `check` command. |
+| Cursor, OpenCode, Gemini CLI, Antigravity, others | skills.sh, or copy `skills/*` into the host's skills directory | no | Frontmatter fields a host does not know are ignored. Same inline fallback as Codex. |
+| Windows | `scripts/install.ps1` | yes | Skill scripts and hooks run under Git Bash. |
+| Linux, macOS | `scripts/install.sh` | no | Nothing in the scripts is Windows-specific, but they have not been run there yet. |
 
 ## Credits
 

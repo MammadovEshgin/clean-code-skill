@@ -57,7 +57,7 @@ Columns are the layers a slop solution needs. A filled circle means the layer is
 ## Where this repo is weaker
 
 - **No scanner of its own.** Deterministic detection is delegated to the linters, aislop, and anti-slop. That is a design choice (the linters are better maintained than a regex list in a skill), but it means a repo with no tooling gets judgement-only cleanup until `/clean-code-setup` runs.
-- **Small evidence base.** Six evals fixtures and a handful of live runs. The alternatives with six-figure stars have thousands of hours of use behind them. The evals harness exists so the number can grow.
+- **Small evidence base.** Seven evals fixtures, single runs, and a baseline arm that has only just started collecting rows; no claim of beating the bare model is supported yet. The alternatives with six-figure stars have thousands of hours of use behind them. The evals harness exists so the number can grow.
 - **Hooks are Claude Code only.** Codex and Cursor users get the gates through the `check` command and `/finish`, not automatically on every edit.
 - **Mutation probes by hand are a sample.** Three mutants per module catch the common holes; a real mutation tool finds more, and `/clean-code-setup` only offers to install one.
 - **No process layer.** Nothing here plans, writes specs, or drives TDD. Pair it with mattpocock/skills or superpowers.
